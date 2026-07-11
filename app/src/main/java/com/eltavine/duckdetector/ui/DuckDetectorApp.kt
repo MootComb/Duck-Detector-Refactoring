@@ -56,11 +56,6 @@ import com.eltavine.duckdetector.core.notifications.preferences.ScanNotification
 import com.eltavine.duckdetector.core.packagevisibility.InstalledPackageVisibilityChecker
 import com.eltavine.duckdetector.core.packagevisibility.preferences.PackageVisibilityReviewPrefs
 import com.eltavine.duckdetector.core.packagevisibility.preferences.PackageVisibilityReviewStore
-import com.eltavine.duckdetector.core.startup.legal.AgreementAcceptancePrefs
-import com.eltavine.duckdetector.core.startup.legal.AgreementAcceptanceStore
-import com.eltavine.duckdetector.core.startup.legal.AgreementScreen
-import com.eltavine.duckdetector.core.ui.components.AlphaBuildBanner
-import com.eltavine.duckdetector.core.ui.components.AlphaBuildWarningOverlay
 import com.eltavine.duckdetector.core.ui.components.DetectorAutoExpansionDirective
 import com.eltavine.duckdetector.core.ui.components.LocalDetectorAutoExpansionDirective
 import com.eltavine.duckdetector.core.ui.components.ScreenshotWatermarkOverlay
@@ -122,9 +117,6 @@ import com.eltavine.duckdetector.features.zygisk.presentation.ZygiskUiStage
 import com.eltavine.duckdetector.features.zygisk.presentation.ZygiskUiState
 import com.eltavine.duckdetector.features.zygisk.presentation.ZygiskViewModel
 import com.eltavine.duckdetector.ui.shell.AppDestination
-import com.eltavine.duckdetector.ui.shell.DetectorResultNoticeDialog
-import com.eltavine.duckdetector.ui.shell.ScreenCaptureNoticeDialog
-import com.eltavine.duckdetector.ui.shell.ScreenCaptureNoticeEffect
 import com.eltavine.duckdetector.ui.shell.attentionDetectorTitles
 import com.eltavine.duckdetector.ui.shell.FloatingAppTabSwitcher
 import com.eltavine.duckdetector.ui.shell.StartupGateState
@@ -152,7 +144,6 @@ fun DuckDetectorApp() {
 
     val context = LocalContext.current
     val appContext = context.applicationContext
-    val agreementStore = remember(appContext) { AgreementAcceptanceStore.getInstance(appContext) }
     val consentStore = remember(appContext) { TeeNetworkConsentStore.getInstance(appContext) }
     val notificationConsentStore = remember(appContext) {
         ScanNotificationConsentStore.getInstance(appContext)
@@ -160,24 +151,10 @@ fun DuckDetectorApp() {
     val packageVisibilityReviewStore = remember(appContext) {
         PackageVisibilityReviewStore.getInstance(appContext)
     }
-    val agreementPrefs by produceState<AgreementAcceptancePrefs?>(
-        initialValue = null,
-        key1 = agreementStore,
-    ) {
-        agreementStore.prefs.collect { currentPrefs ->
-            value = currentPrefs
-        }
-    }
-    val agreementAccepted = agreementPrefs?.accepted == true
     val teePrefs by produceState<TeeNetworkPrefs?>(
         initialValue = null,
         key1 = consentStore,
-        key2 = agreementAccepted,
     ) {
-        if (!agreementAccepted) {
-            value = null
-            return@produceState
-        }
         consentStore.prefs.collect { currentPrefs ->
             value = currentPrefs
         }
@@ -185,12 +162,7 @@ fun DuckDetectorApp() {
     val notificationPrefs by produceState<ScanNotificationPrefs?>(
         initialValue = null,
         key1 = notificationConsentStore,
-        key2 = agreementAccepted,
     ) {
-        if (!agreementAccepted) {
-            value = null
-            return@produceState
-        }
         notificationConsentStore.prefs.collect { currentPrefs ->
             value = currentPrefs
         }
@@ -198,12 +170,7 @@ fun DuckDetectorApp() {
     val packageVisibilityReviewPrefs by produceState<PackageVisibilityReviewPrefs?>(
         initialValue = null,
         key1 = packageVisibilityReviewStore,
-        key2 = agreementAccepted,
     ) {
-        if (!agreementAccepted) {
-            value = null
-            return@produceState
-        }
         packageVisibilityReviewStore.prefs.collect { currentPrefs ->
             value = currentPrefs
         }
@@ -211,12 +178,7 @@ fun DuckDetectorApp() {
     val packageVisibilityState by produceState<StartupPackageVisibilityState?>(
         initialValue = null,
         key1 = appContext,
-        key2 = agreementAccepted,
     ) {
-        if (!agreementAccepted) {
-            value = null
-            return@produceState
-        }
         value = withContext(Dispatchers.IO) {
             val installedPackages =
                 InstalledPackageVisibilityChecker.getInstalledPackages(appContext)
@@ -259,12 +221,7 @@ fun DuckDetectorApp() {
         )
     }
     val startupPoliciesReady = shouldCreateDetectorViewModels(gateState)
-    val requiresAlphaAcknowledgement = BuildConfig.isAlphaVersion
-    var alphaAcknowledged by rememberSaveable(BuildConfig.VERSION_NAME) {
-        mutableStateOf(false)
-    }
     var destination by rememberSaveable { mutableStateOf(AppDestination.MAIN) }
-    var screenCaptureNoticeEventId by remember { mutableLongStateOf(0L) }
     val scope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -297,123 +254,75 @@ fun DuckDetectorApp() {
 
     Surface {
         Box(modifier = Modifier.fillMaxSize()) {
-            ScreenCaptureNoticeEffect(
-                onScreenCaptured = {
-                    screenCaptureNoticeEventId += 1L
-                },
-            )
-
-            when {
-                agreementPrefs == null -> {
-                    StartupBootstrapLoadingScreen(modifier = Modifier.fillMaxSize())
-                }
-
-                !agreementAccepted -> {
-                    AgreementScreen(
-                        onAgree = {
-                            scope.launch {
-                                agreementStore.accept()
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
-                startupPoliciesReady -> {
-                    AppReadyShell(
-                        destination = destination,
-                        onSelectDestination = { selected -> destination = selected },
-                        networkPrefs = requireNotNull(teePrefs),
-                        consentStore = consentStore,
-                        notificationPermissionState = notificationPermissionState,
-                    )
-                }
-
-                else -> {
-                    StartupPolicyScreen(
-                        gateState = gateState,
-                        notificationPrefs = notificationPrefs,
-                        notificationPermissionState = notificationPermissionState,
-                        teePrefs = teePrefs,
-                        packageVisibilityState = packageVisibilityState,
-                        packageVisibilityReviewAcknowledged =
-                            packageVisibilityReviewPrefs?.restrictedInventoryAcknowledged == true,
-                        onAllowNotifications = {
-                            if (Build.VERSION.SDK_INT >= 33) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                scope.launch {
-                                    notificationConsentStore.markNotificationsPrompted()
-                                }
-                            }
-                        },
-                        onSkipNotifications = {
+            if (startupPoliciesReady) {
+                AppReadyShell(
+                    destination = destination,
+                    onSelectDestination = { selected -> destination = selected },
+                    networkPrefs = requireNotNull(teePrefs),
+                    consentStore = consentStore,
+                    notificationPermissionState = notificationPermissionState,
+                )
+            } else {
+                StartupPolicyScreen(
+                    gateState = gateState,
+                    notificationPrefs = notificationPrefs,
+                    notificationPermissionState = notificationPermissionState,
+                    teePrefs = teePrefs,
+                    packageVisibilityState = packageVisibilityState,
+                    packageVisibilityReviewAcknowledged =
+                        packageVisibilityReviewPrefs?.restrictedInventoryAcknowledged == true,
+                    onAllowNotifications = {
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
                             scope.launch {
                                 notificationConsentStore.markNotificationsPrompted()
                             }
-                        },
-                        onOpenLiveUpdateSettings = {
-                            val intent = ScanNotificationPermissions
-                                .appNotificationPromotionSettingsIntent(appContext)
-                            val canOpenSettings =
-                                intent.resolveActivity(appContext.packageManager) != null
-                            if (canOpenSettings) {
-                                liveUpdateSettingsLauncher.launch(intent)
-                            } else {
-                                scope.launch {
-                                    notificationConsentStore.markLiveUpdatesPrompted()
-                                }
-                            }
-                        },
-                        onUseRegularNotifications = {
+                        }
+                    },
+                    onSkipNotifications = {
+                        scope.launch {
+                            notificationConsentStore.markNotificationsPrompted()
+                        }
+                    },
+                    onOpenLiveUpdateSettings = {
+                        val intent = ScanNotificationPermissions
+                            .appNotificationPromotionSettingsIntent(appContext)
+                        val canOpenSettings =
+                            intent.resolveActivity(appContext.packageManager) != null
+                        if (canOpenSettings) {
+                            liveUpdateSettingsLauncher.launch(intent)
+                        } else {
                             scope.launch {
                                 notificationConsentStore.markLiveUpdatesPrompted()
                             }
-                        },
-                        onAllowCrlNetwork = {
-                            scope.launch {
-                                consentStore.setConsent(true)
-                            }
-                        },
-                        onUseLocalCrlOnly = {
-                            scope.launch {
-                                consentStore.setConsent(false)
-                            }
-                        },
-                        onAcknowledgePackageVisibility = {
-                            scope.launch {
-                                packageVisibilityReviewStore.acknowledgeRestrictedInventory()
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                        }
+                    },
+                    onUseRegularNotifications = {
+                        scope.launch {
+                            notificationConsentStore.markLiveUpdatesPrompted()
+                        }
+                    },
+                    onAllowCrlNetwork = {
+                        scope.launch {
+                            consentStore.setConsent(true)
+                        }
+                    },
+                    onUseLocalCrlOnly = {
+                        scope.launch {
+                            consentStore.setConsent(false)
+                        }
+                    },
+                    onAcknowledgePackageVisibility = {
+                        scope.launch {
+                            packageVisibilityReviewStore.acknowledgeRestrictedInventory()
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
             ScreenshotWatermarkOverlay()
-
-            if (agreementAccepted && startupPoliciesReady) {
-                AlphaBuildBanner()
-            }
-
-            AlphaBuildWarningOverlay(
-                forceVisible = agreementAccepted &&
-                        startupPoliciesReady &&
-                        requiresAlphaAcknowledgement &&
-                        !alphaAcknowledged,
-                onDismissed = {
-                    alphaAcknowledged = true
-                },
-            )
-
-            if (screenCaptureNoticeEventId > 0L) {
-                ScreenCaptureNoticeDialog(
-                    noticeInstanceKey = screenCaptureNoticeEventId,
-                    onDismiss = {
-                        screenCaptureNoticeEventId = 0L
-                    },
-                )
-            }
         }
     }
 }
@@ -601,41 +510,13 @@ private fun AppReadyShell(
             buildHash = BuildConfig.BUILD_HASH,
         )
     }
-    val detectorResultNoticeKey = remember(
-        isDashboardLoading,
-        dashboardState.overview.status,
-        dashboardState.overview.summary,
-        dashboardState.overview.metrics,
-    ) {
-        if (!shouldShowDetectorResultNotice(isDashboardLoading, dashboardState.overview.status)) {
-            null
-        } else {
-            buildString {
-                append(dashboardState.overview.headline)
-                append('|')
-                append(dashboardState.overview.summary)
-                dashboardState.overview.metrics.forEach { metric ->
-                    append('|')
-                    append(metric.label)
-                    append('=')
-                    append(metric.value)
-                }
-            }
-        }
-    }
-    var dismissedDetectorResultNoticeKey by rememberSaveable { mutableStateOf<String?>(null) }
     val detectorTitlesNeedingAttention = remember(contributions) {
         attentionDetectorTitles(contributions)
     }
     var pendingAttentionExpansionTitles by rememberSaveable { mutableStateOf(emptyList<String>()) }
 
-    LaunchedEffect(detectorResultNoticeKey, detectorTitlesNeedingAttention) {
-        if (detectorResultNoticeKey == null) {
-            dismissedDetectorResultNoticeKey = null
-            pendingAttentionExpansionTitles = emptyList()
-        } else {
-            pendingAttentionExpansionTitles = detectorTitlesNeedingAttention.toList()
-        }
+    LaunchedEffect(detectorTitlesNeedingAttention) {
+        pendingAttentionExpansionTitles = detectorTitlesNeedingAttention.toList()
     }
 
     val notificationSnapshot = remember(
@@ -704,17 +585,6 @@ private fun AppReadyShell(
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 28.dp),
         )
-
-        if (
-            detectorResultNoticeKey != null &&
-            detectorResultNoticeKey != dismissedDetectorResultNoticeKey
-        ) {
-            DetectorResultNoticeDialog(
-                onDismiss = {
-                    dismissedDetectorResultNoticeKey = detectorResultNoticeKey
-                },
-            )
-        }
     }
 }
 
