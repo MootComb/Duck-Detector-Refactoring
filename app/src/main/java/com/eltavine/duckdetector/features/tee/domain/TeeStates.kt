@@ -44,6 +44,8 @@ data class TeeRkpState(
     val serverSigned: Boolean = false,
     val validityDays: Int? = null,
     val validatedEntity: String? = null,
+    val provisioningManufacturer: String? = null,
+    val certsIssued: Int? = null,
     val attestationExtensionCount: Int = 0,
     val consistencyIssue: String? = null,
     val abuseLevel: TeeSignalLevel = TeeSignalLevel.INFO,
