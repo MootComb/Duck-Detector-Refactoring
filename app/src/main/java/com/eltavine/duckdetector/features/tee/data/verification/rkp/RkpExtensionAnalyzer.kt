@@ -55,8 +55,17 @@ class RkpExtensionAnalyzer {
         val raw = chain[provisioningIndex].getExtensionValue(PROVISIONING_INFO_OID)
             ?: return TeeRkpState(attestationExtensionCount = extensionCount)
         val payload = DerWrapper.unwrapOctetString(raw)
-        val map = TinyCborReader(payload).readMap()
+        // map 是 unversioned 且可能加新字段/新类型，解析失败只丢字段，不该让整条 RKP 分析抛出去
+        // The map is unversioned and may gain new fields or types. A parse failure should cost only the fields, not
+        // throw out of the whole RKP analysis.
+        val map = runCatching { TinyCborReader(payload).readMap() }.getOrElse { emptyMap() }
         val certsIssued = (map[1] as? Long)?.toInt()
+        // map[3] 是设备厂商名，map[4] 是 validated_attested_entity(STRONG_BOX/TEE)，AOSP 文档只写了 1 和 4，
+        // key 3 由 RKP 服务器下发，可与叶子证书的 ATTESTATION_ID_MANUFACTURER(Build.MANUFACTURER) 交叉核对
+        // map[3] is the device manufacturer and map[4] is validated_attested_entity (STRONG_BOX/TEE). The AOSP doc
+        // only lists 1 and 4. Key 3 is issued by the RKP server and cross-checks against the leaf's
+        // ATTESTATION_ID_MANUFACTURER (Build.MANUFACTURER).
+        val provisioningManufacturer = map[3] as? String
         val validatedEntity = map[4] as? String
         return TeeRkpState(
             provisioned = true,
@@ -65,6 +74,8 @@ class RkpExtensionAnalyzer {
                 ((cert.notAfter.time - cert.notBefore.time) / 86_400_000L).toInt()
             },
             validatedEntity = validatedEntity,
+            provisioningManufacturer = provisioningManufacturer,
+            certsIssued = certsIssued,
             attestationExtensionCount = extensionCount,
             abuseLevel = TeeSignalLevel.INFO,
             abuseSummary = certsIssued?.let {
@@ -138,8 +149,20 @@ internal class TinyCborReader(private val bytes: ByteArray) {
             info < 24 -> info
             info == 24 -> nextByte()
             info == 25 -> (nextByte() shl 8) or nextByte()
+            // certs_issued 可以大到用 4/8 字节 uint 编码
+            // certs_issued can be large enough to require a 4/8-byte uint encoding
+            info == 26 -> readUnsignedBytes(4)
+            info == 27 -> readUnsignedBytes(8)
             else -> error("Unsupported CBOR length encoding")
         }
+    }
+
+    private fun readUnsignedBytes(count: Int): Int {
+        var value = 0L
+        repeat(count) { value = (value shl 8) or nextByte().toLong() }
+        // 这里只用于计数/长度，超出 Int 范围就夹到上界，避免溢出成负数
+        // These values are only used as counts/lengths, so clamp past Int range instead of overflowing negative.
+        return value.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
     }
 
     private fun nextByte(): Int = bytes[offset++].toInt() and 0xFF

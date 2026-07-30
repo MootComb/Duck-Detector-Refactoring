@@ -33,6 +33,7 @@ import com.eltavine.duckdetector.features.tee.data.verification.keystore.ImportK
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.KeyboxImportResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2GenerateModeParcelFingerprintResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2HookResult
+import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2PostProcessingResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.KeyLifecycleResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.KeyMintCapabilityResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.GrantDomainFullChainSplitResult
@@ -57,6 +58,7 @@ import com.eltavine.duckdetector.features.tee.data.verification.keystore.UpdateS
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.UpdateSubcomponentStaleResponsePersistenceResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.VintfKeyMintVersionResult
 import com.eltavine.duckdetector.features.tee.data.verification.strongbox.StrongBoxBehaviorResult
+import com.eltavine.duckdetector.features.tee.data.verification.rkp.RkpProvisionedManufacturerResult
 import com.eltavine.duckdetector.features.tee.domain.TeeRkpState
 import com.eltavine.duckdetector.features.tee.domain.TeeSoterState
 
@@ -79,6 +81,8 @@ data class TeeScanArtifacts(
     val vintfKeyMintVersion: VintfKeyMintVersionResult,
     val keystore2Hook: Keystore2HookResult,
     val generateModeParcelFingerprint: Keystore2GenerateModeParcelFingerprintResult,
+    val postProcessing: Keystore2PostProcessingResult,
+    val rkpProvisionedManufacturer: RkpProvisionedManufacturerResult,
     val grantDomainFullChainSplit: GrantDomainFullChainSplitResult,
     val syntheticGrantGranteeBlindReadback: SyntheticGrantGranteeBlindReadbackResult,
     val syntheticGrantGetKeyEntryAccessVectorBlindness: SyntheticGrantGetKeyEntryAccessVectorBlindnessResult,
