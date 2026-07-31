@@ -17,6 +17,7 @@
 package com.eltavine.duckdetector.features.tee.data.repository
 
 import android.content.Context
+import android.os.Build
 import com.eltavine.duckdetector.features.tee.data.attestation.AndroidAttestationCollector
 import com.eltavine.duckdetector.features.tee.data.native.TeeNativeBridge
 import com.eltavine.duckdetector.features.tee.data.preferences.TeeNetworkConsentStore
@@ -68,6 +69,9 @@ import com.eltavine.duckdetector.features.tee.data.verification.keystore.TimingA
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.TimingSideChannelProbe
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.UpdateSubcomponentProbe
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.UpdateSubcomponentStaleResponsePersistenceProbe
+import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2PostProcessingProbe
+import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2PostProcessingResult
+import com.eltavine.duckdetector.features.tee.data.verification.rkp.RkpProvisionedManufacturerProbe
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.VintfKeyMintVersionProbe
 import com.eltavine.duckdetector.features.tee.data.verification.rkp.RkpExtensionAnalyzer
 import com.eltavine.duckdetector.features.tee.data.verification.strongbox.StrongBoxBehaviorProbeSuite
@@ -130,6 +134,8 @@ class TeeRepository(
     private val idAttestationProbe = IdAttestationProbe()
     private val supplementaryAttestationInfoProbe = SupplementaryAttestationInfoProbe(appContext)
     private val vintfKeyMintVersionProbe = VintfKeyMintVersionProbe()
+    private val postProcessingProbe = Keystore2PostProcessingProbe()
+    private val rkpProvisionedManufacturerProbe = RkpProvisionedManufacturerProbe()
     private val strongBoxProbe = StrongBoxBehaviorProbeSuite(appContext, collector)
     private val soterProbe = SoterCapabilityProbe(appContext)
 
@@ -150,6 +156,30 @@ class TeeRepository(
             val bootConsistency = bootConsistencyProbe.inspect(snapshot)
             val supplementaryAttestationInfo = supplementaryAttestationInfoProbe.inspect(snapshot)
             val vintfKeyMintVersion = vintfKeyMintVersionProbe.inspect(snapshot)
+            // 这条探针要成对生成带 attestation 的 key，代价明显，因此只在硬件 KeyMint 层级下运行
+            // This probe generates attested keys pairwise and is visibly expensive, so it only runs on a hardware KeyMint tier.
+            // keystore2 的 RkpdProvisioned 分支从 Android 15 起才有 process_certificate_chain 调用点
+            // keystore2's RkpdProvisioned arm has no process_certificate_chain call site before Android 15
+            val postProcessing = if (Build.VERSION.SDK_INT < 35) {
+                Keystore2PostProcessingResult(
+                    probeRan = false,
+                    detail = "Skipped because keystore2 has no certificate post-processing call site below Android 15.",
+                )
+            } else if (snapshot.tier == TeeTier.TEE || snapshot.tier == TeeTier.STRONGBOX) {
+                runCatching {
+                    postProcessingProbe.inspect(useStrongBox = snapshot.tier == TeeTier.STRONGBOX)
+                }.getOrElse {
+                    Keystore2PostProcessingResult(
+                        probeRan = false,
+                        detail = "Keystore2 post-processing probe failed to start: ${it.message ?: it::class.java.simpleName}",
+                    )
+                }
+            } else {
+                Keystore2PostProcessingResult(
+                    probeRan = false,
+                    detail = "Skipped because the device did not expose a hardware-backed KeyMint tier.",
+                )
+            }
             val timingSideChannel = timingSideChannelProbe.inspect(
                 useStrongBox = false,
                 nativeSnapshot = native,
@@ -183,6 +213,8 @@ class TeeRepository(
                     vintfKeyMintVersion = vintfKeyMintVersion,
                     keystore2Hook = deepChecks.keystore2Hook,
                     generateModeParcelFingerprint = deepChecks.generateModeParcelFingerprint,
+                    postProcessing = postProcessing,
+                    rkpProvisionedManufacturer = rkpProvisionedManufacturerProbe.inspect(rkp, snapshot),
                     grantDomainFullChainSplit = deepChecks.grantDomainFullChainSplit,
                     syntheticGrantGranteeBlindReadback = deepChecks.syntheticGrantGranteeBlindReadback,
                     syntheticGrantGetKeyEntryAccessVectorBlindness =

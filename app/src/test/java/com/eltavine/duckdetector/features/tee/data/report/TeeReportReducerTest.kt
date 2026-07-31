@@ -55,6 +55,8 @@ import com.eltavine.duckdetector.features.tee.data.verification.keystore.KeyboxI
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.KeyboxImportResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2GenerateModeParcelFingerprintResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2HookResult
+import com.eltavine.duckdetector.features.tee.data.verification.keystore.Keystore2PostProcessingResult
+import com.eltavine.duckdetector.features.tee.data.verification.rkp.RkpProvisionedManufacturerResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.LegacyKeystorePathResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.ListEntriesBatchedResult
 import com.eltavine.duckdetector.features.tee.data.verification.keystore.ListEntriesConsistencyResult
@@ -2249,6 +2251,14 @@ class TeeReportReducerTest {
             executed = false,
             detail = "skipped",
         ),
+        postProcessing: Keystore2PostProcessingResult = Keystore2PostProcessingResult(
+            probeRan = false,
+            detail = "skipped",
+        ),
+        rkpProvisionedManufacturer: RkpProvisionedManufacturerResult = RkpProvisionedManufacturerResult(
+            probeRan = false,
+            detail = "skipped",
+        ),
         importKeyRetainedAttestationNarrative: ImportKeyRetainedAttestationNarrativeResult =
             ImportKeyRetainedAttestationNarrativeResult(
                 executed = false,
@@ -2373,6 +2383,8 @@ class TeeReportReducerTest {
             vintfKeyMintVersion = vintfKeyMintVersion,
             keystore2Hook = keystore2Hook,
             generateModeParcelFingerprint = generateModeParcelFingerprint,
+            postProcessing = postProcessing,
+            rkpProvisionedManufacturer = rkpProvisionedManufacturer,
             grantDomainFullChainSplit = grantDomainFullChainSplit,
             syntheticGrantGranteeBlindReadback = syntheticGrantGranteeBlindReadback,
             syntheticGrantGetKeyEntryAccessVectorBlindness = syntheticGrantGetKeyEntryAccessVectorBlindness,
