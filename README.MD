@@ -101,9 +101,13 @@ gradlew.bat :app:assembleDebug
  * **Hardware & Vendor Restrictions**: Due to OEM policies or sandbox rules, some probes may report downgraded statuses on specific models. Certain low-level checks rely strictly on the arm64-v8a ABI architecture.
 ## 📈 Status & Stars
 
-<p>
-  <img src="https://api.star-history.com/svg?repos=eltavine/Duck-Detector-Refactoring&type=Date" alt="Star History Chart" width="600">
-</p>
+<a href="https://www.star-history.com/?repos=eltavine%2FDuck-Detector-Refactoring&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&theme=dark&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+ </picture>
+</a>
 
 ## ⚖️ Disclaimer
 This software is provided "as is", without warranty of any kind. It is designed for educational, diagnostic, and security research purposes only. The developers assume no liability for direct or indirect damage, data loss, or system instability resulting from use of this application. Relying on heuristic security detection is at your own risk.
