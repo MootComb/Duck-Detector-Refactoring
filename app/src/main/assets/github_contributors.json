@@ -7,7 +7,7 @@
       "asm",
       "kotlin"
     ],
-    "contributions": 101,
+    "contributions": 103,
     "name": "eltavine",
     "avatarAssetPath": "github_contributors/avatars/eltavine.jpg",
     "summaryKey": "author_summary_eltavine",
@@ -19,7 +19,7 @@
       "cpp",
       "kotlin"
     ],
-    "contributions": 27,
+    "contributions": 28,
     "name": "XiaoTong6666",
     "avatarAssetPath": "github_contributors/avatars/xiaotong6666.jpg",
     "summaryKey": "author_summary_xiaotong",
@@ -40,7 +40,7 @@
   {
     "profileUrl": "https://github.com/947409161",
     "contributionKeys": ["ui"],
-    "contributions": 12,
+    "contributions": 13,
     "name": "947409161",
     "avatarAssetPath": "github_contributors/avatars/947409161.jpg",
     "summaryKey": "author_summary_947409161",
@@ -129,6 +129,14 @@
     "avatarAssetPath": "github_contributors/avatars/hsskyboy.jpg",
     "summaryKey": "author_summary_hsskyboy",
     "login": "HSSkyBoy"
+  },
+  {
+    "profileUrl": "https://github.com/MhmRdd",
+    "contributionKeys": [],
+    "contributions": 1,
+    "name": "MhmRdd",
+    "avatarAssetPath": "github_contributors/avatars/mhmrdd.jpg",
+    "login": "MhmRdd"
   },
   {
     "profileUrl": "https://github.com/SQMY-dor",
