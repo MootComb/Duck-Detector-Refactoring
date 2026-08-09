@@ -76,4 +76,26 @@ class UpdateManifestParserTest {
             )
         }
     }
+
+    @Test
+    fun `rejects numeric values encoded as strings`() {
+        val json = JSONObject(validUpdateManifestJson())
+            .put("versionCode", "500")
+            .toString()
+
+        assertThrows(UpdateManifestValidationException::class.java) {
+            parser.parse(json)
+        }
+    }
+
+    @Test
+    fun `rejects unsafe APK asset names`() {
+        val json = JSONObject(validUpdateManifestJson())
+        json.getJSONObject("apk")
+            .put("name", "../Duck.Detector-test.apk")
+
+        assertThrows(UpdateManifestValidationException::class.java) {
+            parser.parse(json.toString())
+        }
+    }
 }

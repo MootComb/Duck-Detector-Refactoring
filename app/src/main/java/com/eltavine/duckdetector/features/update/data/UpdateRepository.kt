@@ -21,6 +21,7 @@ import com.eltavine.duckdetector.features.update.domain.NightlyUpdateManifest
 import com.eltavine.duckdetector.features.update.domain.UpdateChangelogEntry
 import com.eltavine.duckdetector.features.update.domain.UpdateCheckResult
 import kotlin.math.ceil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -94,7 +95,7 @@ class UpdateRepository internal constructor(
             throw IllegalArgumentException("Commit SHA cannot be compared through GitHub.")
         }
         val cacheKey = "${baseSha.lowercase()}...${headSha.lowercase()}"
-        cache.read(cacheKey)?.let { cachedJson ->
+        readCachedCompare(cacheKey)?.let { cachedJson ->
             runCatching { compareParser.parse(cachedJson) }
                 .getOrNull()
                 ?.let { return it }
@@ -114,8 +115,28 @@ class UpdateRepository internal constructor(
         } else {
             firstPageJson
         }
-        cache.write(cacheKey, selectedJson)
+        writeCachedCompare(cacheKey, selectedJson)
         return compareParser.parse(selectedJson)
+    }
+
+    private suspend fun readCachedCompare(cacheKey: String): String? {
+        return try {
+            cache.read(cacheKey)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun writeCachedCompare(cacheKey: String, json: String) {
+        try {
+            cache.write(cacheKey, json)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            // Changelog caching is optional and must not suppress a valid update result.
+        }
     }
 
     private fun buildCompareApiUrl(baseSha: String, headSha: String, page: Int): String {

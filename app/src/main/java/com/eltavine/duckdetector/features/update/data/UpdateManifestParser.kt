@@ -53,15 +53,18 @@ class UpdateManifestParser {
         val commit = NightlyUpdateCommit(
             sha = commitSha,
             subject = commitJson.requireNonBlankString("subject"),
-            body = commitJson.optString("body", ""),
+            body = commitJson.optionalString("body"),
             authorName = commitJson.requireNonBlankString("authorName"),
             authoredAt = authoredAt,
         )
 
         val apkJson = root.requireObject("apk")
         val apkName = apkJson.requireNonBlankString("name")
-        if (!apkName.endsWith(".apk", ignoreCase = true)) {
-            throw UpdateManifestValidationException("Nightly update asset must be an APK.")
+        if (apkName.length > MAX_ASSET_NAME_LENGTH ||
+            !apkName.endsWith(".apk", ignoreCase = true) ||
+            apkName.any { it == '/' || it == '\\' || it.isISOControl() }
+        ) {
+            throw UpdateManifestValidationException("Nightly update asset name is invalid.")
         }
         val downloadUrl = apkJson.requireNonBlankString("downloadUrl")
         validateDownloadUrl(downloadUrl, apkName)
@@ -91,13 +94,14 @@ class UpdateManifestParser {
     private fun validateDownloadUrl(rawUrl: String, apkName: String) {
         val uri = runCatching { URI(rawUrl) }
             .getOrElse { throw UpdateManifestValidationException("APK download URL is invalid.") }
-        if (uri.scheme != "https" || !uri.host.equals(EXPECTED_DOWNLOAD_HOST, ignoreCase = true)) {
+        if (uri.scheme != "https" ||
+            !uri.host.equals(EXPECTED_DOWNLOAD_HOST, ignoreCase = true) ||
+            uri.rawUserInfo != null ||
+            uri.port != -1
+        ) {
             throw UpdateManifestValidationException("APK download URL must use the official GitHub host.")
         }
-        val decodedPath = uri.path.orEmpty()
-        if (!decodedPath.startsWith(EXPECTED_DOWNLOAD_PATH_PREFIX) ||
-            decodedPath.substringAfterLast('/') != apkName
-        ) {
+        if (uri.path != "$EXPECTED_DOWNLOAD_PATH_PREFIX$apkName") {
             throw UpdateManifestValidationException("APK download URL is outside the Nightly release.")
         }
     }
@@ -109,6 +113,7 @@ class UpdateManifestParser {
         private const val EXPECTED_DOWNLOAD_HOST = "github.com"
         private const val EXPECTED_DOWNLOAD_PATH_PREFIX =
             "/eltavine/Duck-Detector-Refactoring/releases/download/nightly/"
+        private const val MAX_ASSET_NAME_LENGTH = 255
         private val FULL_SHA_REGEX = Regex("^[0-9a-f]{40}$")
         private val SHA256_REGEX = Regex("^[0-9a-f]{64}$")
     }
@@ -120,15 +125,34 @@ private fun JSONObject.requireObject(name: String): JSONObject {
 }
 
 private fun JSONObject.requireNonBlankString(name: String): String {
-    val value = optString(name, "").trim()
+    val rawValue = opt(name)
+    if (rawValue !is String) {
+        throw UpdateManifestValidationException("Update manifest value must be a string: $name")
+    }
+    val value = rawValue.trim()
     if (value.isBlank()) {
         throw UpdateManifestValidationException("Missing update manifest string: $name")
     }
     return value
 }
 
+private fun JSONObject.optionalString(name: String): String {
+    if (!has(name) || isNull(name)) {
+        return ""
+    }
+    return opt(name) as? String
+        ?: throw UpdateManifestValidationException("Update manifest value must be a string: $name")
+}
+
 private fun JSONObject.requirePositiveInt(name: String): Int {
-    val value = optInt(name, -1)
+    val rawValue = opt(name)
+    val value = if (rawValue is Int) {
+        rawValue
+    } else if (rawValue is Long) {
+        rawValue.takeIf { it in 1..Int.MAX_VALUE }?.toInt() ?: -1
+    } else {
+        -1
+    }
     if (value <= 0) {
         throw UpdateManifestValidationException("Update manifest value must be positive: $name")
     }
@@ -136,7 +160,14 @@ private fun JSONObject.requirePositiveInt(name: String): Int {
 }
 
 private fun JSONObject.requirePositiveLong(name: String): Long {
-    val value = optLong(name, -1L)
+    val rawValue = opt(name)
+    val value = if (rawValue is Int) {
+        rawValue.toLong()
+    } else if (rawValue is Long) {
+        rawValue
+    } else {
+        -1L
+    }
     if (value <= 0L) {
         throw UpdateManifestValidationException("Update manifest value must be positive: $name")
     }

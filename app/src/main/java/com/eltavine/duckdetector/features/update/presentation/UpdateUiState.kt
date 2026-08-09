@@ -26,6 +26,16 @@ enum class UpdateCheckStatus {
     FAILED,
 }
 
+sealed interface UpdateDownloadResolution {
+    data class Ready(val url: String) : UpdateDownloadResolution
+
+    data object Refreshed : UpdateDownloadResolution
+
+    data object Current : UpdateDownloadResolution
+
+    data object Failed : UpdateDownloadResolution
+}
+
 data class UpdateUiState(
     val status: UpdateCheckStatus = UpdateCheckStatus.IDLE,
     val availableUpdate: AvailableNightlyUpdate? = null,

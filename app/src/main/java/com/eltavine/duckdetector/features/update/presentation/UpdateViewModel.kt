@@ -76,6 +76,40 @@ class UpdateViewModel internal constructor(
         _uiState.value = _uiState.value.copy(isDialogVisible = false)
     }
 
+    suspend fun resolveDownload(): UpdateDownloadResolution {
+        val displayedManifest = _uiState.value.availableUpdate?.manifest
+        return try {
+            when (
+                val result = repository.check(
+                    currentVersionCode = currentVersionCode,
+                    currentCommitSha = currentCommitSha,
+                )
+            ) {
+                is UpdateCheckResult.Current -> {
+                    _uiState.value = UpdateUiState(status = UpdateCheckStatus.CURRENT)
+                    UpdateDownloadResolution.Current
+                }
+
+                is UpdateCheckResult.Available -> {
+                    _uiState.value = UpdateUiState(
+                        status = UpdateCheckStatus.AVAILABLE,
+                        availableUpdate = result.update,
+                        isDialogVisible = true,
+                    )
+                    if (result.update.manifest == displayedManifest) {
+                        UpdateDownloadResolution.Ready(result.update.manifest.apk.downloadUrl)
+                    } else {
+                        UpdateDownloadResolution.Refreshed
+                    }
+                }
+            }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            UpdateDownloadResolution.Failed
+        }
+    }
+
     private fun check(manual: Boolean) {
         checkJob?.cancel()
         _uiState.value = _uiState.value.copy(

@@ -119,6 +119,7 @@ import com.eltavine.duckdetector.features.tee.data.preferences.TeeNetworkPrefs
 import com.eltavine.duckdetector.features.tee.presentation.TeeUiStage
 import com.eltavine.duckdetector.features.tee.presentation.TeeUiState
 import com.eltavine.duckdetector.features.tee.presentation.TeeViewModel
+import com.eltavine.duckdetector.features.update.presentation.UpdateDownloadResolution
 import com.eltavine.duckdetector.features.update.presentation.UpdateViewModel
 import com.eltavine.duckdetector.features.update.ui.NightlyUpdateDialog
 import com.eltavine.duckdetector.features.virtualization.presentation.VirtualizationUiStage
@@ -439,6 +440,7 @@ private fun AppReadyShell(
     val appContext = context.applicationContext
     val updateOpenFailedMessage = stringResource(R.string.update_open_failed)
     val scope = rememberCoroutineScope()
+    var isResolvingUpdateDownload by remember { mutableStateOf(false) }
     val notifier = remember(appContext) { ScanProgressNotifier(appContext) }
     val updateFactory = remember(context) { UpdateViewModel.factory(context) }
     val bootloaderFactory = remember(context) { BootloaderViewModel.factory(context) }
@@ -742,6 +744,7 @@ private fun AppReadyShell(
             NightlyUpdateDialog(
                 currentVersionName = BuildConfig.VERSION_NAME,
                 update = availableUpdate,
+                downloadEnabled = !isResolvingUpdateDownload,
                 onDismiss = updateViewModel::dismissUpdate,
                 onViewChanges = {
                     if (!openExternalUri(context, availableUpdate.compareUrl)) {
@@ -753,14 +756,38 @@ private fun AppReadyShell(
                     }
                 },
                 onDownload = {
-                    if (openExternalUri(context, availableUpdate.manifest.apk.downloadUrl)) {
-                        updateViewModel.dismissUpdate()
-                    } else {
-                        Toast.makeText(
-                            context,
-                            updateOpenFailedMessage,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                    if (!isResolvingUpdateDownload) {
+                        isResolvingUpdateDownload = true
+                        scope.launch {
+                            try {
+                                when (val resolution = updateViewModel.resolveDownload()) {
+                                    is UpdateDownloadResolution.Ready -> {
+                                        if (openExternalUri(context, resolution.url)) {
+                                            updateViewModel.dismissUpdate()
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                updateOpenFailedMessage,
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                    }
+
+                                    UpdateDownloadResolution.Failed -> {
+                                        Toast.makeText(
+                                            context,
+                                            updateOpenFailedMessage,
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+
+                                    UpdateDownloadResolution.Current,
+                                    UpdateDownloadResolution.Refreshed -> Unit
+                                }
+                            } finally {
+                                isResolvingUpdateDownload = false
+                            }
+                        }
                     }
                 },
             )

@@ -136,9 +136,34 @@ class UpdateRepositoryTest {
         assertEquals(0, result.update.remainingCommitCount)
     }
 
+    @Test
+    fun `cache write failure does not suppress an available update`() = runBlocking {
+        val failingCache = object : UpdateCompareCache {
+            override suspend fun read(key: String): String? = null
+
+            override suspend fun write(key: String, json: String) {
+                throw IOException("disk unavailable")
+            }
+        }
+        val repository = repository(
+            cache = failingCache,
+            client = UpdateHttpClient { url, _ ->
+                if (url == UpdateRepository.MANIFEST_URL) {
+                    validUpdateManifestJson()
+                } else {
+                    compareResponseJson(1, listOf(testCommit(1)))
+                }
+            },
+        )
+
+        val result = repository.check(400, TEST_BASE_SHA)
+
+        assertTrue(result is UpdateCheckResult.Available)
+    }
+
     private fun repository(
         client: UpdateHttpClient,
-        cache: FakeUpdateCompareCache = FakeUpdateCompareCache(),
+        cache: UpdateCompareCache = FakeUpdateCompareCache(),
     ): UpdateRepository {
         return UpdateRepository(
             httpClient = client,

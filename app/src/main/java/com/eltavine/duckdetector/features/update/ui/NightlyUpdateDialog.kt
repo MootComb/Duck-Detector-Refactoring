@@ -67,6 +67,7 @@ import java.util.Locale
 fun NightlyUpdateDialog(
     currentVersionName: String,
     update: AvailableNightlyUpdate,
+    downloadEnabled: Boolean,
     onDismiss: () -> Unit,
     onViewChanges: () -> Unit,
     onDownload: () -> Unit,
@@ -253,6 +254,7 @@ fun NightlyUpdateDialog(
                         }
                         Button(
                             onClick = onDownload,
+                            enabled = downloadEnabled,
                             modifier = Modifier
                                 .weight(1.5f)
                                 .heightIn(min = 48.dp),

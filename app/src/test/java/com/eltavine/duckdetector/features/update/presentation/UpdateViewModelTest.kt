@@ -21,6 +21,7 @@ import com.eltavine.duckdetector.features.update.data.TEST_BASE_SHA
 import com.eltavine.duckdetector.features.update.data.UpdateManifestParser
 import com.eltavine.duckdetector.features.update.data.validUpdateManifestJson
 import com.eltavine.duckdetector.features.update.domain.AvailableNightlyUpdate
+import com.eltavine.duckdetector.features.update.domain.NightlyUpdateManifest
 import com.eltavine.duckdetector.features.update.domain.UpdateChangelogEntry
 import com.eltavine.duckdetector.features.update.domain.UpdateCheckResult
 import kotlinx.coroutines.Dispatchers
@@ -127,6 +128,55 @@ class UpdateViewModelTest {
         assertFalse(gate.tryAcquire())
     }
 
+    @Test
+    fun `download resolution rechecks an unchanged manifest before opening`() = runTest(dispatcher) {
+        val available = availableUpdate()
+        val viewModel = viewModel(
+            checker = NightlyUpdateChecker { _, _ -> UpdateCheckResult.Available(available) },
+        )
+        viewModel.checkAutomatically()
+        advanceUntilIdle()
+
+        val resolution = viewModel.resolveDownload()
+
+        assertEquals(
+            UpdateDownloadResolution.Ready(manifest.apk.downloadUrl),
+            resolution,
+        )
+    }
+
+    @Test
+    fun `download resolution refreshes a superseded Nightly instead of opening its stale URL`() =
+        runTest(dispatcher) {
+            val newerManifest = manifest.copy(
+                versionName = "2026.08.09-${NEWER_HEAD_SHA.take(12)}",
+                versionCode = 501,
+                commit = manifest.commit.copy(sha = NEWER_HEAD_SHA),
+                apk = manifest.apk.copy(
+                    name = "Duck.Detector-newer.apk",
+                    downloadUrl =
+                        "https://github.com/eltavine/Duck-Detector-Refactoring/releases/download/nightly/Duck.Detector-newer.apk",
+                ),
+            )
+            var calls = 0
+            val viewModel = viewModel(
+                checker = NightlyUpdateChecker { _, _ ->
+                    calls += 1
+                    UpdateCheckResult.Available(
+                        if (calls == 1) availableUpdate() else availableUpdate(newerManifest),
+                    )
+                },
+            )
+            viewModel.checkAutomatically()
+            advanceUntilIdle()
+
+            val resolution = viewModel.resolveDownload()
+
+            assertEquals(UpdateDownloadResolution.Refreshed, resolution)
+            assertEquals(newerManifest, viewModel.uiState.value.availableUpdate?.manifest)
+            assertTrue(viewModel.uiState.value.isDialogVisible)
+        }
+
     private fun viewModel(checker: NightlyUpdateChecker): UpdateViewModel {
         return UpdateViewModel(
             repository = checker,
@@ -136,19 +186,25 @@ class UpdateViewModelTest {
         )
     }
 
-    private fun availableUpdate(): AvailableNightlyUpdate {
+    private fun availableUpdate(
+        updateManifest: NightlyUpdateManifest = manifest,
+    ): AvailableNightlyUpdate {
         return AvailableNightlyUpdate(
-            manifest = manifest,
+            manifest = updateManifest,
             changelog = listOf(
                 UpdateChangelogEntry(
-                    sha = manifest.commit.sha,
-                    subject = manifest.commit.subject,
-                    authorName = manifest.commit.authorName,
+                    sha = updateManifest.commit.sha,
+                    subject = updateManifest.commit.subject,
+                    authorName = updateManifest.commit.authorName,
                 ),
             ),
             remainingCommitCount = 0,
             compareUrl =
-                "https://github.com/eltavine/Duck-Detector-Refactoring/compare/$TEST_BASE_SHA...${manifest.commit.sha}",
+                "https://github.com/eltavine/Duck-Detector-Refactoring/compare/$TEST_BASE_SHA...${updateManifest.commit.sha}",
         )
+    }
+
+    private companion object {
+        private const val NEWER_HEAD_SHA = "cccccccccccccccccccccccccccccccccccccccc"
     }
 }
