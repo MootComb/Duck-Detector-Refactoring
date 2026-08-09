@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">Tuyên bố miễn trừ</string>
     <string name="disclaimer_content" formatted="false">LƯU Ý QUAN TRỌNG:&#10;&#10;1. Giới hạn phát hiện&#10;Duck Detector sử dụng nhiều phương pháp để đánh giá trạng thái bảo mật của thiết bị, nhưng không có phương pháp nào đạt độ chính xác 100&#37;. Kết quả chỉ nên được xem là dấu hiệu tham khảo, không phải kết luận cuối cùng.&#10;&#10;2. Báo động sai và bỏ sót&#10;Ứng dụng có thể tạo ra báo động sai hoặc bỏ sót. Hãy luôn kết hợp công cụ bảo mật chuyên nghiệp và việc tự xác minh của bạn để có đánh giá đầy đủ.&#10;&#10;3. Miễn trừ trách nhiệm&#10;Các nhà phát triển, người đóng góp và bên phân phối Duck Detector sẽ không chịu trách nhiệm đối với mọi thiệt hại trực tiếp, gián tiếp, ngẫu nhiên, đặc biệt hoặc hậu quả phát sinh từ việc sử dụng hoặc không thể sử dụng ứng dụng này.&#10;&#10;4. Dịch vụ bên thứ ba&#10;Kiểm tra thu hồi TEE mặc định dùng ảnh chụp tích hợp trong ứng dụng. Nếu bạn cho phép cập nhật dữ liệu thu hồi trực tuyến, ứng dụng có thể truy cập Google attestation revocation endpoint. Bản thân quá trình quét vẫn được thực hiện cục bộ trên thiết bị của bạn, và các kết quả phát hiện không được cố ý tải lên dưới dạng telemetry quét.</string>
     <string name="privacy_notice_title">Thông báo quyền riêng tư</string>
-    <string name="privacy_notice_content" formatted="false">Tóm tắt quyền riêng tư: các kiểm tra bảo mật được thực hiện cục bộ trên thiết bị của bạn. Kết quả phát hiện không được cố ý tải lên dưới dạng telemetry quét. Kiểm tra thu hồi TEE mặc định dùng ảnh chụp tích hợp; nếu bạn cho phép cập nhật dữ liệu thu hồi trực tuyến, ứng dụng có thể truy cập Google attestation revocation endpoint.</string>
+    <string name="privacy_notice_content" formatted="false">Tóm tắt quyền riêng tư: các kiểm tra bảo mật chạy cục bộ trên thiết bị và kết quả không được tải lên dưới dạng telemetry. Kiểm tra thu hồi TEE mặc định dùng dữ liệu tích hợp. Sau khi hoàn tất lựa chọn khởi động, ứng dụng kết nối GitHub một lần mỗi lần khởi động lạnh để kiểm tra siêu dữ liệu bản Nightly.</string>
     <string name="timer_elapsed">Đã chờ 30 giây</string>
     <string name="timer_waiting">Vui lòng chờ %1$d giây</string>
     <string name="fully_reviewed">Đã xem hết</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">Hoàn thành tất cả điều kiện</string>
     <string name="agreement_acknowledgement">Khi tiếp tục, bạn xác nhận rằng mình đã đọc và đồng ý với các điều khoản này.</string>
     <string name="settings_title">Cài đặt</string>
-    <string name="settings_subtitle">Các điều khiển thời gian chạy cho các đường xác minh trực tuyến.</string>
+    <string name="settings_subtitle">Điều khiển xác minh trực tuyến và trạng thái cập nhật GitHub Nightly.</string>
     <string name="settings_crl_title">Cho phép làm mới CRL trực tuyến</string>
     <string name="settings_crl_summary">Kiểm tra thu hồi TEE luôn dùng ảnh chụp tích hợp; tùy chọn này chỉ cho phép tải Google attestation revocation feed mới nhất.</string>
     <string name="settings_crl_footer">Thay đổi có hiệu lực ngay với hành vi làm mới trực tuyến. Kiểm tra thu hồi TEE tích hợp vẫn luôn bật.</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">Mã băm build</string>
     <string name="about_label_privacy">Quyền riêng tư / Dữ liệu</string>
-    <string name="about_privacy_summary">Các kiểm tra chạy cục bộ trên thiết bị. Dữ liệu thu hồi TEE được tích hợp trong ứng dụng; làm mới CRL trực tuyến là tùy chọn và chỉ xảy ra khi bạn bật trong Cài đặt.</string>
+    <string name="about_privacy_summary">Các kiểm tra chạy cục bộ và kết quả không được tải lên. Ứng dụng kết nối GitHub một lần mỗi lần khởi động lạnh để lấy siêu dữ liệu Nightly. Làm mới CRL trực tuyến vẫn là tùy chọn.</string>
     <string name="about_label_copy_build_info">Sao chép thông tin build</string>
     <string name="about_copy_build_info_summary">Sao chép phiên bản, thời gian build và mã băm build</string>
     <string name="about_clipboard_label">Thông tin build Duck Detector</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">Thời gian build (UTC): %1$s UTC</string>
     <string name="about_clipboard_build_hash_line">Mã băm build: %1$s</string>
     <string name="about_copy_toast">Đã sao chép thông tin build</string>
+    <string name="update_settings_label">Kiểm tra cập nhật</string>
+    <string name="update_status_idle">Kiểm tra GitHub Master Nightly sau khi khởi động lạnh; chạm để kiểm tra ngay</string>
+    <string name="update_status_checking">Đang kiểm tra GitHub…</string>
+    <string name="update_status_current">Bạn đang dùng bản Nightly mới nhất</string>
+    <string name="update_status_available">Có bản Nightly mới; chạm để xem chi tiết</string>
+    <string name="update_status_failed">Không thể kiểm tra GitHub; chạm để thử lại</string>
+    <string name="update_dialog_title">Có bản cập nhật Nightly</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">Nhánh và commit</string>
+    <string name="update_author_label">Tác giả commit mới nhất</string>
+    <string name="update_time_label">Cập nhật lúc</string>
+    <string name="update_changelog_title">Thay đổi kể từ bản hiện tại</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">Còn 1 commit chưa hiển thị</item>
+        <item quantity="other">Còn %1$d commit chưa hiển thị</item>
+    </plurals>
+    <string name="update_later">Để sau</string>
+    <string name="update_view_changes">Xem tất cả thay đổi trên GitHub</string>
+    <string name="update_download">Mở trang tải xuống</string>
+    <string name="update_open_failed">Không có trình duyệt để mở GitHub</string>
     <string name="author_summary_eltavine">Đóng góp UI, C++, ASM và Kotlin.</string>
     <string name="author_summary_baka">TEE &amp; Zygisk</string>
     <string name="author_summary_xiaotong">TEE (C++, Kotlin)</string>

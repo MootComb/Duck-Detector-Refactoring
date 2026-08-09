@@ -61,6 +61,7 @@ import com.eltavine.duckdetector.ui.theme.ShapeTokens
 fun SettingsScreen(
     uiState: SettingsUiState,
     onCrlNetworkingChange: (Boolean) -> Unit,
+    onCheckForUpdates: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showingLicenses by rememberSaveable { mutableStateOf(false) }
@@ -171,6 +172,8 @@ fun SettingsScreen(
                     versionCode = uiState.versionCode,
                     buildTimeUtc = uiState.buildTimeUtc,
                     buildHash = uiState.buildHash,
+                    updateStatus = uiState.updateStatus,
+                    onCheckForUpdates = onCheckForUpdates,
                 )
 
                 OpenSourceLicensesEntry(

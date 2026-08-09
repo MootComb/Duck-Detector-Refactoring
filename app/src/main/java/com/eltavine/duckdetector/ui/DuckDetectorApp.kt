@@ -19,6 +19,7 @@ package com.eltavine.duckdetector.ui
 import android.Manifest
 import android.os.Build
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -41,9 +42,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eltavine.duckdetector.BuildConfig
+import com.eltavine.duckdetector.R
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -64,6 +67,7 @@ import com.eltavine.duckdetector.core.ui.components.AlphaBuildWarningOverlay
 import com.eltavine.duckdetector.core.ui.components.DetectorAutoExpansionDirective
 import com.eltavine.duckdetector.core.ui.components.LocalDetectorAutoExpansionDirective
 import com.eltavine.duckdetector.core.ui.components.ScreenshotWatermarkOverlay
+import com.eltavine.duckdetector.core.ui.openExternalUri
 import com.eltavine.duckdetector.features.bootloader.presentation.BootloaderUiStage
 import com.eltavine.duckdetector.features.bootloader.presentation.BootloaderUiState
 import com.eltavine.duckdetector.features.bootloader.presentation.BootloaderViewModel
@@ -115,6 +119,8 @@ import com.eltavine.duckdetector.features.tee.data.preferences.TeeNetworkPrefs
 import com.eltavine.duckdetector.features.tee.presentation.TeeUiStage
 import com.eltavine.duckdetector.features.tee.presentation.TeeUiState
 import com.eltavine.duckdetector.features.tee.presentation.TeeViewModel
+import com.eltavine.duckdetector.features.update.presentation.UpdateViewModel
+import com.eltavine.duckdetector.features.update.ui.NightlyUpdateDialog
 import com.eltavine.duckdetector.features.virtualization.presentation.VirtualizationUiStage
 import com.eltavine.duckdetector.features.virtualization.presentation.VirtualizationUiState
 import com.eltavine.duckdetector.features.virtualization.presentation.VirtualizationViewModel
@@ -326,6 +332,8 @@ fun DuckDetectorApp() {
                         networkPrefs = requireNotNull(teePrefs),
                         consentStore = consentStore,
                         notificationPermissionState = notificationPermissionState,
+                        canShowUpdateDialog = (!requiresAlphaAcknowledgement || alphaAcknowledged) &&
+                                screenCaptureNoticeEventId == 0L,
                     )
                 }
 
@@ -425,11 +433,14 @@ private fun AppReadyShell(
     networkPrefs: TeeNetworkPrefs,
     consentStore: TeeNetworkConsentStore,
     notificationPermissionState: com.eltavine.duckdetector.core.notifications.ScanNotificationPermissionState,
+    canShowUpdateDialog: Boolean,
 ) {
     val context = LocalContext.current
     val appContext = context.applicationContext
+    val updateOpenFailedMessage = stringResource(R.string.update_open_failed)
     val scope = rememberCoroutineScope()
     val notifier = remember(appContext) { ScanProgressNotifier(appContext) }
+    val updateFactory = remember(context) { UpdateViewModel.factory(context) }
     val bootloaderFactory = remember(context) { BootloaderViewModel.factory(context) }
     val teeFactory = remember(context) { TeeViewModel.factory(context) }
     val customRomFactory = remember(context) { CustomRomViewModel.factory(context) }
@@ -446,6 +457,7 @@ private fun AppReadyShell(
     val systemPropertiesFactory = remember { SystemPropertiesViewModel.factory() }
     val virtualizationFactory = remember(context) { VirtualizationViewModel.factory(context) }
     val zygiskFactory = remember(context) { ZygiskViewModel.factory(context) }
+    val updateViewModel: UpdateViewModel = viewModel(factory = updateFactory)
     val bootloaderViewModel: BootloaderViewModel = viewModel(factory = bootloaderFactory)
     val teeViewModel: TeeViewModel = viewModel(factory = teeFactory)
     val customRomViewModel: CustomRomViewModel = viewModel(factory = customRomFactory)
@@ -481,6 +493,11 @@ private fun AppReadyShell(
     val virtualizationUiState by virtualizationViewModel.uiState.collectAsState()
     val zygiskUiState by zygiskViewModel.uiState.collectAsState()
     val bootloaderUiState by bootloaderViewModel.uiState.collectAsState()
+    val updateUiState by updateViewModel.uiState.collectAsState()
+
+    LaunchedEffect(updateViewModel) {
+        updateViewModel.checkAutomatically()
+    }
     val contributions = remember(
         bootloaderUiState,
         teeUiState,
@@ -592,13 +609,14 @@ private fun AppReadyShell(
             isLoading = isDashboardLoading,
         )
     }
-    val settingsState = remember(networkPrefs.consentGranted) {
+    val settingsState = remember(networkPrefs.consentGranted, updateUiState.status) {
         SettingsUiState(
             isCrlNetworkingEnabled = networkPrefs.consentGranted,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
             buildTimeUtc = BuildConfig.BUILD_TIME_UTC,
             buildHash = BuildConfig.BUILD_HASH,
+            updateStatus = updateUiState.status,
         )
     }
     val detectorResultNoticeKey = remember(
@@ -692,6 +710,7 @@ private fun AppReadyShell(
                             teeViewModel.rescan()
                         }
                     },
+                    onCheckForUpdates = updateViewModel::onSettingsUpdateAction,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -712,6 +731,37 @@ private fun AppReadyShell(
             DetectorResultNoticeDialog(
                 onDismiss = {
                     dismissedDetectorResultNoticeKey = detectorResultNoticeKey
+                },
+            )
+        } else if (
+            canShowUpdateDialog &&
+            updateUiState.isDialogVisible &&
+            updateUiState.availableUpdate != null
+        ) {
+            val availableUpdate = requireNotNull(updateUiState.availableUpdate)
+            NightlyUpdateDialog(
+                currentVersionName = BuildConfig.VERSION_NAME,
+                update = availableUpdate,
+                onDismiss = updateViewModel::dismissUpdate,
+                onViewChanges = {
+                    if (!openExternalUri(context, availableUpdate.compareUrl)) {
+                        Toast.makeText(
+                            context,
+                            updateOpenFailedMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                },
+                onDownload = {
+                    if (openExternalUri(context, availableUpdate.manifest.apk.downloadUrl)) {
+                        updateViewModel.dismissUpdate()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            updateOpenFailedMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
                 },
             )
         }

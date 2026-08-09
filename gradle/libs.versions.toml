@@ -47,6 +47,7 @@ hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypa
 soter-wrapper = { group = "com.github.Tencent.soter", name = "soter-wrapper", version.ref = "soterWrapper" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 compose-icons-simple = { module = "br.com.devsrsouza.compose.icons:simple-icons-android", version.ref = "composeIcons" }
 aboutlibraries-compose-m3 = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutLibraries" }
 
@@ -82,6 +83,7 @@ test-android = [
 test-unit = [
   "junit",
   "json",
+  "kotlinx-coroutines-test",
 ]
 
 [plugins]

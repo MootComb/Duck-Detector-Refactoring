@@ -181,6 +181,7 @@ jobs:
 
           start_time=$(date +%s)
           build_time_utc=$(date -u +%Y%m%d%H%M%S)
+          build_time_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           ./gradlew \
             -Pduckdetector.buildTimeUtc="${build_time_utc}" \
             -Pduckdetector.teeCrl.refresh=true \
@@ -195,6 +196,8 @@ jobs:
 
           echo "duration_seconds=$duration_seconds" >> "$GITHUB_OUTPUT"
           echo "duration_human=$duration_human" >> "$GITHUB_OUTPUT"
+          echo "build_time_utc=$build_time_utc" >> "$GITHUB_OUTPUT"
+          echo "build_time_iso=$build_time_iso" >> "$GITHUB_OUTPUT"
 
       - name: Collect artifact metadata
         id: metadata
@@ -377,9 +380,29 @@ jobs:
           PY
           )
 
+          version_name=$(METADATA_JSON="${metadata_json}" python3 - <<'PY'
+          import json
+          import os
+
+          metadata = json.loads(os.environ["METADATA_JSON"])
+          print(metadata["version_name"], end="")
+          PY
+          )
+
+          version_code=$(METADATA_JSON="${metadata_json}" python3 - <<'PY'
+          import json
+          import os
+
+          metadata = json.loads(os.environ["METADATA_JSON"])
+          print(metadata["version_code"], end="")
+          PY
+          )
+
           {
             echo "apk_path=$apk_path"
             echo "apk_name=$apk_name"
+            echo "version_name=$version_name"
+            echo "version_code=$version_code"
             delimiter="CAPTION_$(date +%s)_$$"
             echo "caption<<${delimiter}"
             printf '%s\n' "$caption"
@@ -437,29 +460,6 @@ jobs:
         run: |
           echo "asset_path=${{ steps.metadata.outputs.apk_path }}" >> "$GITHUB_OUTPUT"
 
-      - name: Delete old Nightly assets
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          OWNER="${{ github.repository_owner }}"
-          REPO="${GITHUB_REPOSITORY#*/}"
-          echo "Find nightly release..."
-          RELEASE_JSON=$(gh api repos/$OWNER/$REPO/releases/tags/nightly 2>/dev/null || true)
-          RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id // empty')
-          if [ -z "$RELEASE_ID" ]; then
-            echo "Nightly release doesn't exist, skip deletion"
-            exit 0
-          fi
-          echo "Release ID: $RELEASE_ID"
-          echo "Get and delete all old assets (paginated)..."
-          ASSET_IDS=$(gh api --paginate repos/$OWNER/$REPO/releases/$RELEASE_ID/assets --jq '.[].id')
-          for ASSET_ID in $ASSET_IDS; do
-            echo "Delete asset $ASSET_ID"
-            gh api -X DELETE repos/$OWNER/$REPO/releases/assets/$ASSET_ID
-          done
-
       - name: Prepare nightly release note
         if: github.ref_name == 'main' || github.ref_name == 'master'
         shell: bash
@@ -479,12 +479,185 @@ jobs:
           tag_name: nightly
           name: Nightly APK Build
           body_path: nightly-release-note.md
-          prerelease: false
+          prerelease: true
+          make_latest: false
           overwrite_files: true
           files: |
             ${{ steps.release_asset.outputs.asset_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare Nightly update manifest
+        id: update_manifest
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        shell: bash
+        env:
+          APK_NAME: ${{ steps.metadata.outputs.apk_name }}
+          APK_PATH: ${{ steps.metadata.outputs.apk_path }}
+          BUILD_BRANCH: ${{ github.ref_name }}
+          BUILD_TIME_ISO: ${{ steps.build.outputs.build_time_iso }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
+          VERSION_NAME: ${{ steps.metadata.outputs.version_name }}
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          apk_path = Path(os.environ["APK_PATH"])
+          release_json = subprocess.check_output(
+              ["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/releases/tags/nightly"],
+              text=True,
+          )
+          release_assets = json.loads(release_json).get("assets", [])
+          apk_url = next(
+              (
+                  asset.get("browser_download_url", "")
+                  for asset in release_assets
+                  if asset.get("name") == os.environ["APK_NAME"]
+              ),
+              "",
+          )
+          expected_prefix = (
+              f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/nightly/"
+          )
+          if not apk_url.startswith(expected_prefix):
+              raise SystemExit(f"Unexpected Nightly APK URL: {apk_url}")
+
+          def git(*args: str) -> str:
+              return subprocess.check_output(["git", *args], text=True).strip()
+
+          def iso8601_from_epoch(epoch: str) -> str:
+              return datetime.fromtimestamp(int(epoch), tz=timezone.utc) \
+                  .strftime("%Y-%m-%dT%H:%M:%SZ")
+
+          sha256 = hashlib.sha256()
+          with apk_path.open("rb") as apk_file:
+              for chunk in iter(lambda: apk_file.read(1024 * 1024), b""):
+                  sha256.update(chunk)
+
+          commit_sha = git("rev-parse", "HEAD")
+          manifest = {
+              "schemaVersion": 1,
+              "channel": "nightly",
+              "branch": os.environ["BUILD_BRANCH"],
+              "versionName": os.environ["VERSION_NAME"],
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "commit": {
+                  "sha": commit_sha,
+                  "subject": git("log", "-1", "--format=%s", "HEAD"),
+                  "body": git("log", "-1", "--format=%b", "HEAD"),
+                  "authorName": git("log", "-1", "--format=%an", "HEAD"),
+                  "authoredAt": iso8601_from_epoch(git("log", "-1", "--format=%at", "HEAD")),
+              },
+              "builtAtUtc": os.environ["BUILD_TIME_ISO"],
+              "apk": {
+                  "name": os.environ["APK_NAME"],
+                  "downloadUrl": apk_url,
+                  "sizeBytes": apk_path.stat().st_size,
+                  "sha256": sha256.hexdigest(),
+              },
+          }
+
+          Path("update.json").write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          jq -e '
+            .schemaVersion == 1 and
+            .channel == "nightly" and
+            .branch == env.BUILD_BRANCH and
+            .versionCode == (env.VERSION_CODE | tonumber) and
+            .commit.sha == env.GITHUB_SHA and
+            (.apk.downloadUrl | startswith("https://github.com/")) and
+            (.apk.sha256 | test("^[0-9a-f]{64}$"))
+          ' update.json >/dev/null
+
+          {
+            echo "manifest_path=update.json"
+            echo "apk_public_url=$(jq -r '.apk.downloadUrl' update.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish Nightly update manifest
+        id: nightly_manifest_release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        with:
+          tag_name: nightly
+          name: Nightly APK Build
+          body_path: nightly-release-note.md
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: |
+            ${{ steps.update_manifest.outputs.manifest_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify published Nightly assets
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        shell: bash
+        env:
+          APK_NAME: ${{ steps.metadata.outputs.apk_name }}
+          EXPECTED_APK_URL: ${{ steps.update_manifest.outputs.apk_public_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          release_json=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/nightly")
+          apk_url=$(jq -r --arg name "$APK_NAME" '.assets[] | select(.name == $name) | .browser_download_url' <<<"$release_json")
+          manifest_url=$(jq -r '.assets[] | select(.name == "update.json") | .browser_download_url' <<<"$release_json")
+
+          if [ "$apk_url" != "$EXPECTED_APK_URL" ] || [ -z "$manifest_url" ]; then
+            echo "Published Nightly assets do not match the generated manifest." >&2
+            exit 1
+          fi
+
+          curl --fail --location --retry 3 --retry-delay 2 "$manifest_url" -o published-update.json
+          cmp --silent update.json published-update.json
+
+      - name: Delete obsolete Nightly APK assets
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        shell: bash
+        env:
+          APK_NAME: ${{ steps.metadata.outputs.apk_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases/tags/nightly" \
+            --jq '.assets[] | [.id, .name] | @tsv' |
+          while IFS=$'\t' read -r asset_id asset_name; do
+            if [ "$asset_name" != "$APK_NAME" ] && [ "$asset_name" != "update.json" ]; then
+              gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
+            fi
+          done
+
+      - name: Move Nightly tag to published commit
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/nightly" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/nightly" \
+              -f sha="$GITHUB_SHA" \
+              -F force=true >/dev/null
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/tags/nightly" \
+              -f sha="$GITHUB_SHA" >/dev/null
+          fi
 
       - name: Install Python dependency for QQ push
         if: github.ref_name == 'main' || github.ref_name == 'master'
@@ -503,7 +676,7 @@ jobs:
           QQ_GROUP_IDS: ${{ vars.QQ_GROUP_IDS }}
           BUILD_CAPTION_HTML: ${{ steps.metadata.outputs.caption }}
           APK_NAME: ${{ steps.metadata.outputs.apk_name }}
-          APK_PUBLIC_URL: ${{ fromJSON(steps.nightly_release.outputs.assets)[0].browser_download_url }}
+          APK_PUBLIC_URL: ${{ steps.update_manifest.outputs.apk_public_url }}
         run: |
           python3 - <<'PY'
           import asyncio
