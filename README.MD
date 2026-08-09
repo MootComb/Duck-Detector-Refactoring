@@ -115,19 +115,3 @@ This software is provided "as is", without warranty of any kind. It is designed 
 ## 📄 License
 This project is open-sourced under the Apache License 2.0.
 
-## 👥 Contributors
-
-### Code Contributors
-
-<a href="https://github.com/eltavine/Duck-Detector-Refactoring/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=eltavine/Duck-Detector-Refactoring" alt="Contributors" />
-</a>
-
-### Special Thanks
-
-<p>
-  <a href="https://github.com/aviraxp" title="aviraxp"><img src="https://images.weserv.nl/?url=https://github.com/aviraxp.png&w=64&h=64&mask=circle" width="64" height="64" alt="aviraxp"></a>
-  &nbsp;
-  <a href="https://github.com/5ec1cff" title="5ec1cff"><img src="https://images.weserv.nl/?url=https://github.com/5ec1cff.png&w=64&h=64&mask=circle" width="64" height="64" alt="5ec1cff"></a>
-</p>
-

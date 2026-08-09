@@ -97,7 +97,13 @@ gradlew.bat :app:assembleDebug
  * **硬件与厂商限制**：因 OEM 策略或沙盒规则，部分探针在特定机型上可能报告降级状态。部分低级底层检查依赖于 arm64-v8a ABI 架构。
 ## 📈 项目状态与趋势 / Status & Stars
 
-![star-history-chart]
+<a href="https://www.star-history.com/?repos=eltavine%2FDuck-Detector-Refactoring&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&theme=dark&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=eltavine/Duck-Detector-Refactoring&type=date&legend=top-left&sealed_token=z8Kbufd8a78_gJi-_n_U1dbqg3bT3wexECwhrq7Vx1QpfiXBUdPXV5w_rUQSnu86aVeWxIJJENg8tVTng5ul8xki40oK_UhKF3-_gZgvrhWzbtd7OKm9kg" />
+ </picture>
+</a>
 
 ## ⚖️ 免责声明 / Disclaimer
 ```text
@@ -112,12 +118,3 @@ security detection is at your own risk.
 ```
 ## 📄 开源协议 / License
 本项目基于 **Apache License 2.0** 协议开源。
-## 👥 贡献者 / Contributors
-感谢以下为 DuckDetector 做出贡献的开发者们！
-<p>
-  <a href="https://github.com/eltavine/Duck-Detector-Refactoring/graphs/contributors"><img src="https://contrib.rocks/image?repo=eltavine/Duck-Detector-Refactoring" alt="Contributors"></a>
-  <a href="https://github.com/aviraxp" title="SELinux 与 LSPosed 误报反馈"><img src="https://github.com/aviraxp.png?size=64" width="64" alt="aviraxp"></a>
-  <a href="https://github.com/5ec1cff" title="SELinux 与 LSPosed 误报发现"><img src="https://github.com/5ec1cff.png?size=64" width="64" alt="5ec1cff"></a>
-</p>
-
-[star-history-chart]: https://api.star-history.com/svg?repos=eltavine/Duck-Detector-Refactoring&type=Date
