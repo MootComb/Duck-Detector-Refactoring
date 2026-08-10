@@ -128,8 +128,6 @@ jobs:
       - name: Collect artifact metadata
         id: metadata
         shell: bash
-        env:
-          METADATA_JSON: ${{ steps.metadata.outputs.metadata_json }} 
         run: |
           set -euo pipefail
 
@@ -196,30 +194,15 @@ jobs:
             exit 1
           fi
 
-          apk_path=$(python3 - <<'PY'
-          import json
-          import os
+          echo "metadata_json=$metadata_json" >> "$GITHUB_OUTPUT"
 
-          metadata = json.loads(os.environ["METADATA_JSON"])
-          print(metadata["apk_path"], end="")
-          PY
-          )
-
-          apk_name=$(python3 - <<'PY'
-          import json
-          import os
-
-          metadata = json.loads(os.environ["METADATA_JSON"])
-          print(metadata["apk_name"], end="")
-          PY
-          )
+          apk_path=$(echo "$metadata_json" | python3 -c "import sys, json; print(json.load(sys.stdin)['apk_path'])")
+          apk_name=$(echo "$metadata_json" | python3 -c "import sys, json; print(json.load(sys.stdin)['apk_name'])")
 
           {
             echo "apk_path=$apk_path"
             echo "apk_name=$apk_name"
           } >> "$GITHUB_OUTPUT"
-        env:
-          METADATA_JSON: ${{ steps.metadata.outputs.metadata_json }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -234,7 +217,7 @@ jobs:
           echo "asset_path=${{ steps.metadata.outputs.apk_path }}" >> "$GITHUB_OUTPUT"
 
       - name: Delete old Nightly assets
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        if: github.ref_name == 'main' || github.ref_name == 'master'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
