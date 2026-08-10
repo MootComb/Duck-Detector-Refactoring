@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Build APK And Push To Telegram
+name: Build APK
 
 on:
   push:
@@ -21,7 +21,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    environment: Telegram
     permissions:
       contents: write
 
@@ -129,10 +128,6 @@ jobs:
       - name: Collect artifact metadata
         id: metadata
         shell: bash
-        env:
-          DURATION_HUMAN: ${{ steps.build.outputs.duration_human }}
-          GIT_BRANCH: ${{ github.ref_name }}
-          SIGNER_NAME: ${{ steps.signing_fingerprint.outputs.signer_name }}
         run: |
           set -euo pipefail
 
@@ -199,97 +194,7 @@ jobs:
             exit 1
           fi
 
-          commit_subject=$(git log -1 --pretty=%s)
-          commit_author=$(git log -1 --pretty=%an)
-          commit_body=$(git log -1 --pretty=%b)
-          git_hash=$(git rev-parse --short=8 HEAD)
-          caption=$(METADATA_JSON="${metadata_json}" COMMIT_SUBJECT="${commit_subject}" COMMIT_BODY="${commit_body}" COMMIT_AUTHOR="${commit_author}" DURATION_HUMAN="${DURATION_HUMAN}" GIT_BRANCH="${GIT_BRANCH}" GIT_HASH="${git_hash}" SIGNER_NAME="${SIGNER_NAME}" python3 - <<'PY'
-          import json
-          import os
-
-          metadata = json.loads(os.environ["METADATA_JSON"])
-          commit_subject = os.environ["COMMIT_SUBJECT"]
-          commit_body = os.environ["COMMIT_BODY"]
-          commit_author = os.environ["COMMIT_AUTHOR"]
-          duration_human = os.environ["DURATION_HUMAN"]
-          git_branch = os.environ["GIT_BRANCH"]
-          git_hash = os.environ["GIT_HASH"]
-          signer_name = os.environ["SIGNER_NAME"] or "Unknown signer"
-
-          def first_paragraph(text: str) -> str:
-              paragraphs = []
-              current = []
-              for raw_line in text.splitlines():
-                  line = raw_line.strip()
-                  if not line:
-                      if current:
-                          paragraphs.append(" ".join(current))
-                          current = []
-                      continue
-                  current.append(line)
-              if current:
-                  paragraphs.append(" ".join(current))
-              return paragraphs[0] if paragraphs else ""
-
-          summary = first_paragraph(commit_body)
-
-          def escape_html(text: str) -> str:
-              return (
-                  text.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
-              )
-
-          def render(subject: str, summary_text: str) -> str:
-              commit_block_lines = [subject]
-              if summary_text:
-                  commit_block_lines.extend(["", summary_text])
-
-              commit_block = escape_html("\n".join(commit_block_lines))
-
-              lines = [
-                  f"Version: <b>{escape_html(metadata['version_name'])} ({escape_html(metadata['version_code'])})</b>",
-                  f"APK: <b>{escape_html(metadata['apk_name'])}</b>",
-                  "Commit:",
-                  f"<pre>{commit_block}</pre>",
-                  f"Author: <b>{escape_html(commit_author)}</b>",
-                  f"Branch: <b>{escape_html(git_branch)}@{escape_html(git_hash)}</b>",
-                  f"Build time: <b>{escape_html(duration_human)}</b>",
-                  f"Signature: <b>verified : by {escape_html(signer_name)}</b>",
-              ]
-              return "\n".join(lines)
-
-          def truncate(text: str, limit: int) -> str:
-              if limit <= 0:
-                  return ""
-              if len(text) <= limit:
-                  return text
-              if limit <= 3:
-                  return text[:limit]
-              return text[: limit - 3].rstrip() + "..."
-
-          max_caption_length = 1024
-
-          caption = render(commit_subject, summary)
-          if len(caption) > max_caption_length and summary:
-              without_summary = render(commit_subject, "")
-              summary_budget = max_caption_length - len(without_summary) - 2
-              summary = truncate(summary, summary_budget)
-              caption = render(commit_subject, summary)
-
-          if len(caption) > max_caption_length:
-              base_without_subject = render("", summary)
-              subject_budget = max_caption_length - len(base_without_subject)
-              if subject_budget < 1:
-                  raise SystemExit("Telegram caption template exceeds the 1024 character limit.")
-              commit_subject = truncate(commit_subject, subject_budget)
-              caption = render(commit_subject, summary)
-
-          print(caption, end="")
-          PY
-          )
-
-          apk_path=$(METADATA_JSON="${metadata_json}" python3 - <<'PY'
+          apk_path=$(python3 - <<'PY'
           import json
           import os
 
@@ -298,7 +203,7 @@ jobs:
           PY
           )
 
-          apk_name=$(METADATA_JSON="${metadata_json}" python3 - <<'PY'
+          apk_name=$(python3 - <<'PY'
           import json
           import os
 
@@ -310,12 +215,10 @@ jobs:
           {
             echo "apk_path=$apk_path"
             echo "apk_name=$apk_name"
-            delimiter="CAPTION_$(date +%s)_$$"
-            echo "caption<<${delimiter}"
-            printf '%s\n' "$caption"
-            echo "${delimiter}"
           } >> "$GITHUB_OUTPUT"
-          
+        env:
+          METADATA_JSON: ${{ steps.metadata.outputs.metadata_json }}
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
