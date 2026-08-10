@@ -38,7 +38,7 @@ jobs:
           echo "🔄 Syncing from remote repository to MootComb..."
           
           # Try to merge
-          if git merge --no-commit --no-ff upstream/main; then
+          if git merge --no-commit --no-ff upstream/master; then
             echo "✅ Merge successful, no conflicts"
             echo "HAS_CHANGES=true" >> $GITHUB_ENV
           else
@@ -75,7 +75,7 @@ jobs:
             echo "pushed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "Sync: merged from remote repository (kept our files) $(date -u '+%Y-%m-%d %H:%M:%S')"
-            git push origin main
+            git push origin master
             echo "✅ Changes pushed to MootComb!"
             echo "pushed=true" >> $GITHUB_OUTPUT
           fi
@@ -102,6 +102,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'build.yml',
-              ref: 'main'
+              ref: 'master'
             });
             console.log('✅ Build workflow triggered successfully!');
