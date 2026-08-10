@@ -1,0 +1,107 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    outputs:
+      pushed: ${{ steps.check-push.outputs.pushed }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Add remote repository as upstream
+        run: |
+          git remote add upstream https://github.com/eltavine/Duck-Detector-Refactoring
+          git fetch upstream
+      
+      - name: Merge from remote repository (keep our files on conflicts)
+        id: merge
+        run: |
+          echo "🔄 Syncing from remote repository to MootComb..."
+          
+          # Try to merge
+          if git merge --no-commit --no-ff upstream/main; then
+            echo "✅ Merge successful, no conflicts"
+            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+          else
+            echo "⚠️ Conflicts detected! Keeping OUR files (MootComb)..."
+            
+            # Get conflicted files
+            CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
+            
+            if [ -z "$CONFLICT_FILES" ]; then
+              echo "❌ No conflicted files found, but merge failed"
+              git merge --abort
+              echo "HAS_CHANGES=false" >> $GITHUB_ENV
+              exit 0
+            fi
+            
+            # For each conflicted file, take OUR version
+            for file in $CONFLICT_FILES; do
+              echo "  🛡️ Keeping our file: $file"
+              git checkout --ours "$file" 2>/dev/null || true
+              git add "$file"
+            done
+            
+            echo "✅ Conflicts resolved in favor of our files"
+            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+          fi
+      
+      - name: Commit and push changes
+        if: env.HAS_CHANGES == 'true'
+        id: push
+        run: |
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "ℹ️ No changes to commit"
+            echo "pushed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "Sync: merged from remote repository (kept our files) $(date -u '+%Y-%m-%d %H:%M:%S')"
+            git push origin main
+            echo "✅ Changes pushed to MootComb!"
+            echo "pushed=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Set output
+        id: check-push
+        run: |
+          if [ "${{ steps.push.outputs.pushed }}" == "true" ] || [ "${{ env.HAS_CHANGES }}" == "true" ]; then
+            echo "pushed=true" >> $GITHUB_OUTPUT
+          else
+            echo "pushed=false" >> $GITHUB_OUTPUT
+          fi
+
+  trigger-build:
+    needs: sync
+    if: needs.sync.outputs.pushed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger build workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: workflow } = await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build.yml',
+              ref: 'main'
+            });
+            console.log('✅ Build workflow triggered successfully!');
