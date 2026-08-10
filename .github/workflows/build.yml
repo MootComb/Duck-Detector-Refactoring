@@ -128,6 +128,8 @@ jobs:
       - name: Collect artifact metadata
         id: metadata
         shell: bash
+        env:
+          METADATA_JSON: ${{ steps.metadata.outputs.metadata_json }} 
         run: |
           set -euo pipefail
 
