@@ -128,6 +128,9 @@ import com.eltavine.duckdetector.ui.shell.shouldCreateDetectorViewModels
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.eltavine.duckdetector.features.update.presentation.UpdateViewModel
+import com.eltavine.duckdetector.features.update.presentation.UpdateDownloadResolution
+import com.eltavine.duckdetector.features.update.ui.NightlyUpdateDialog
 
 @Composable
 fun DuckDetectorApp() {
@@ -809,4 +812,25 @@ private fun buildVirtualizationContribution(
         summary = virtualizationUiState.cardModel.summary,
         ready = virtualizationUiState.stage != VirtualizationUiStage.LOADING,
     )
+}
+
+class UpdateViewModel {
+    fun dismissUpdate() {}
+    suspend fun resolveDownload(): UpdateDownloadResolution = UpdateDownloadResolution.Current
+    companion object {
+        fun factory(context: android.content.Context): androidx.lifecycle.ViewModelProvider.Factory {
+            return object : androidx.lifecycle.ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return UpdateViewModel() as T
+                }
+            }
+        }
+    }
+}
+
+sealed class UpdateDownloadResolution {
+    object Current : UpdateDownloadResolution()
+    object Refreshed : UpdateDownloadResolution()
+    object Failed : UpdateDownloadResolution()
+    class Ready(val url: String) : UpdateDownloadResolution()
 }
