@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -49,6 +50,7 @@ import com.eltavine.duckdetector.R
 import com.eltavine.duckdetector.core.ui.openExternalUri
 import com.eltavine.duckdetector.core.ui.components.WrapSafeText
 import com.eltavine.duckdetector.core.ui.presentation.formatBuildTimeUtc
+import com.eltavine.duckdetector.features.update.presentation.UpdateCheckStatus
 import com.eltavine.duckdetector.ui.theme.ShapeTokens
 
 private const val ABOUT_WEBSITE = "eltavine.com"
@@ -62,6 +64,8 @@ fun AboutCard(
     versionCode: Int,
     buildTimeUtc: String,
     buildHash: String,
+    updateStatus: UpdateCheckStatus,
+    onCheckForUpdates: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -73,6 +77,13 @@ fun AboutCard(
     )
     val clipboardBuildHashLine = stringResource(R.string.about_clipboard_build_hash_line, buildHash)
     val copyToast = stringResource(R.string.about_copy_toast)
+    val updateStatusText = when (updateStatus) {
+        UpdateCheckStatus.IDLE -> stringResource(R.string.update_status_idle)
+        UpdateCheckStatus.CHECKING -> stringResource(R.string.update_status_checking)
+        UpdateCheckStatus.CURRENT -> stringResource(R.string.update_status_current)
+        UpdateCheckStatus.AVAILABLE -> stringResource(R.string.update_status_available)
+        UpdateCheckStatus.FAILED -> stringResource(R.string.update_status_failed)
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -126,6 +137,14 @@ fun AboutCard(
                     label = stringResource(R.string.about_label_version),
                     value = stringResource(R.string.about_value_version, versionName, versionCode),
                     icon = Icons.Rounded.Badge,
+                )
+                AboutInfoRow(
+                    label = stringResource(R.string.update_settings_label),
+                    value = updateStatusText,
+                    icon = Icons.Rounded.SystemUpdate,
+                    onClick = onCheckForUpdates.takeUnless {
+                        updateStatus == UpdateCheckStatus.CHECKING
+                    },
                 )
                 AboutInfoRow(
                     label = stringResource(R.string.about_label_website),

@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">إخلاء المسؤولية</string>
     <string name="disclaimer_content" formatted="false">إشعار مهم:&#10;&#10;1. حدود الكشف&#10;يستخدم Duck Detector عدة أساليب لاكتشاف الحالة الأمنية للجهاز، لكن لا توجد أي طريقة دقيقة بنسبة 100&#37;. يجب التعامل مع النتائج على أنها مؤشرات إرشادية وليست أحكامًا نهائية.&#10;&#10;2. الإيجابيات والسلبيات الخاطئة&#10;قد ينتج التطبيق نتائج إيجابية خاطئة أو يفوّت بعض الحالات. استخدم دائمًا أدوات أمنية احترافية وتحققك الشخصي للحصول على تقييم أشمل.&#10;&#10;3. عدم تحمل المسؤولية&#10;لا يتحمل مطورو Duck Detector أو المساهمون فيه أو موزعوه أي مسؤولية عن أي أضرار مباشرة أو غير مباشرة أو عرضية أو خاصة أو تبعية تنشأ عن استخدام هذا التطبيق أو عدم القدرة على استخدامه.&#10;&#10;4. خدمات الجهات الخارجية&#10;تستخدم فحوصات إبطال TEE افتراضيًا لقطة مدمجة داخل التطبيق. إذا سمحت بتحديث بيانات الإبطال عبر الإنترنت، فقد يتصل التطبيق بـ Google attestation revocation endpoint. تظل عمليات الفحص الأمنية نفسها محلية على جهازك، ولا يتم تحميل نتائج الكاشف عمدًا كقياسات تتبع لعملية الفحص.</string>
     <string name="privacy_notice_title">إشعار الخصوصية</string>
-    <string name="privacy_notice_content" formatted="false">ملخص الخصوصية: تعمل الفحوصات الأمنية محليًا على جهازك. لا يتم تحميل نتائج الكاشف عمدًا كقياسات تتبع لعملية الفحص. تستخدم فحوصات إبطال TEE افتراضيًا لقطة مدمجة؛ وإذا سمحت بتحديث بيانات الإبطال عبر الإنترنت، فقد يتصل التطبيق بـ Google attestation revocation endpoint.</string>
+    <string name="privacy_notice_content" formatted="false">ملخص الخصوصية: تعمل الفحوصات الأمنية محليًا على جهازك ولا تُرفع نتائج الكشف كبيانات تتبع. تستخدم فحوصات إبطال TEE افتراضيًا لقطة مدمجة. بعد إكمال خيارات بدء التشغيل، يتصل التطبيق بـ GitHub مرة واحدة عند كل تشغيل بارد للتحقق من بيانات تحديث Nightly.</string>
     <string name="timer_elapsed">انقضت 30 ثانية</string>
     <string name="timer_waiting">يرجى الانتظار %1$d ثانية</string>
     <string name="fully_reviewed">تمت المراجعة بالكامل</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">أكمل جميع الشروط</string>
     <string name="agreement_acknowledgement">بمتابعتك، فإنك تقر بأنك قرأت هذه الشروط ووافقت عليها.</string>
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_subtitle">عناصر تحكم وقت التشغيل لمسارات التحقق عبر الإنترنت.</string>
+    <string name="settings_subtitle">عناصر تحكم التحقق عبر الإنترنت وحالة تحديث GitHub Nightly.</string>
     <string name="settings_crl_title">السماح بتحديث CRL عبر الإنترنت</string>
     <string name="settings_crl_summary">تستخدم فحوصات إبطال TEE دائمًا لقطة مدمجة؛ يسمح هذا الخيار فقط بجلب أحدث Google attestation revocation feed.</string>
     <string name="settings_crl_footer">تُطبَّق التغييرات فورًا على سلوك التحديث عبر الإنترنت. تبقى فحوصات إبطال TEE المدمجة مفعلة.</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">مُعرف البناء</string>
     <string name="about_label_privacy">الخصوصية / استخدام البيانات</string>
-    <string name="about_privacy_summary">تعمل الفحوصات محليًا على الجهاز. تُضمَّن بيانات إبطال TEE داخل التطبيق؛ ويظل تحديث CRL عبر الإنترنت اختياريًا ولا يحدث إلا إذا قمت بتمكينه من الإعدادات.</string>
+    <string name="about_privacy_summary">تعمل الفحوصات محليًا ولا تُرفع نتائج الكشف. يتصل التطبيق بـ GitHub مرة واحدة عند كل تشغيل بارد لجلب بيانات تحديث Nightly. يظل تحديث CRL عبر الإنترنت اختياريًا.</string>
     <string name="about_label_copy_build_info">نسخ معلومات البناء</string>
     <string name="about_copy_build_info_summary">نسخ الإصدار ووقت البناء ومُعرف البناء</string>
     <string name="about_clipboard_label">معلومات بناء Duck Detector</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">وقت البناء (UTC): %1$s UTC</string>
     <string name="about_clipboard_build_hash_line">مُعرف البناء: %1$s</string>
     <string name="about_copy_toast">تم نسخ معلومات البناء</string>
+    <string name="update_settings_label">التحقق من التحديثات</string>
+    <string name="update_status_idle">يتم فحص GitHub Master Nightly بعد التشغيل البارد؛ اضغط للفحص الآن</string>
+    <string name="update_status_checking">جارٍ التحقق من GitHub…</string>
+    <string name="update_status_current">لديك أحدث إصدار Nightly</string>
+    <string name="update_status_available">يتوفر إصدار Nightly أحدث؛ اضغط للتفاصيل</string>
+    <string name="update_status_failed">تعذر التحقق من GitHub؛ اضغط لإعادة المحاولة</string>
+    <string name="update_dialog_title">يتوفر تحديث Nightly</string>
+    <string name="update_version_change">%1$s ← %2$s</string>
+    <string name="update_branch_hash_label">الفرع والالتزام</string>
+    <string name="update_author_label">مؤلف أحدث التزام</string>
+    <string name="update_time_label">وقت التحديث</string>
+    <string name="update_changelog_title">التغييرات منذ إصدارك</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">لم يتم عرض التزام إضافي واحد</item>
+        <item quantity="other">لم يتم عرض %1$d من الالتزامات الإضافية</item>
+    </plurals>
+    <string name="update_later">لاحقًا</string>
+    <string name="update_view_changes">عرض كل التغييرات على GitHub</string>
+    <string name="update_download">فتح التنزيل</string>
+    <string name="update_open_failed">لا يتوفر متصفح لفتح GitHub</string>
     <string name="tee_diagnostic_clipboard_label">تفاصيل تشخيص TEE</string>
     <string name="tee_diagnostic_copied_toast">تم نسخ تفاصيل التشخيص</string>
     <string name="author_summary_eltavine">ساهم في واجهة المستخدم و C++ و ASM و Kotlin.</string>

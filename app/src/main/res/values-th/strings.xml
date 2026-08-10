@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">ข้อจำกัดความรับผิดชอบ</string>
     <string name="disclaimer_content" formatted="false">ประกาศสำคัญ:&#10;&#10;1. ข้อจำกัดของการตรวจจับ&#10;Duck Detector ใช้วิธีหลายแบบในการประเมินสถานะความปลอดภัยของอุปกรณ์ แต่ไม่มีวิธีใดที่แม่นยำ 100&#37; ผลลัพธ์ควรถูกมองว่าเป็นสัญญาณประกอบ ไม่ใช่ข้อสรุปสุดท้าย&#10;&#10;2. การแจ้งเตือนผิดพลาดและการพลาดตรวจ&#10;แอปนี้อาจให้ผลลวงหรือพลาดตรวจได้ โปรดใช้ร่วมกับเครื่องมือความปลอดภัยแบบมืออาชีพและการตรวจสอบด้วยตนเองเพื่อการประเมินที่ครบถ้วน&#10;&#10;3. การจำกัดความรับผิด&#10;ผู้พัฒนา ผู้มีส่วนร่วม และผู้จัดจำหน่าย Duck Detector จะไม่รับผิดชอบต่อความเสียหายใด ๆ ทั้งโดยตรง โดยอ้อม โดยบังเอิญ เป็นกรณีพิเศษ หรือเป็นผลสืบเนื่องจากการใช้งานหรือการไม่สามารถใช้งานแอปนี้ได้&#10;&#10;4. บริการของบุคคลที่สาม&#10;การตรวจสอบการเพิกถอน TEE ใช้ snapshot ที่ฝังในแอปเป็นค่าเริ่มต้น หากคุณอนุญาตการอัปเดตข้อมูลการเพิกถอนออนไลน์ แอปอาจเชื่อมต่อกับ Google attestation revocation endpoint การสแกนความปลอดภัยยังคงทำงานภายในอุปกรณ์ของคุณ และผลการตรวจจับจะไม่ถูกอัปโหลดเป็น telemetry ของการสแกนโดยเจตนา</string>
     <string name="privacy_notice_title">ประกาศความเป็นส่วนตัว</string>
-    <string name="privacy_notice_content" formatted="false">สรุปความเป็นส่วนตัว: การตรวจสอบความปลอดภัยจะทำงานภายในอุปกรณ์ของคุณ ผลการตรวจจับจะไม่ถูกอัปโหลดเป็น telemetry ของการสแกนโดยเจตนา การตรวจสอบการเพิกถอน TEE ใช้ snapshot ในตัวเป็นค่าเริ่มต้น หากคุณอนุญาตการอัปเดตข้อมูลการเพิกถอนออนไลน์ แอปอาจเชื่อมต่อกับ Google attestation revocation endpoint</string>
+    <string name="privacy_notice_content" formatted="false">สรุปความเป็นส่วนตัว: การตรวจสอบความปลอดภัยทำงานภายในอุปกรณ์และจะไม่อัปโหลดผลการตรวจจับเป็น telemetry การตรวจสอบการเพิกถอน TEE ใช้ snapshot ในตัวเป็นค่าเริ่มต้น หลังจากตั้งค่าการเริ่มต้นเสร็จ แอปจะเชื่อมต่อ GitHub หนึ่งครั้งต่อการเปิดแบบ cold start เพื่อตรวจสอบข้อมูลอัปเดต Nightly</string>
     <string name="timer_elapsed">ครบ 30 วินาที</string>
     <string name="timer_waiting">โปรดรอ %1$d วินาที</string>
     <string name="fully_reviewed">ตรวจครบแล้ว</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">ทำเงื่อนไขให้ครบ</string>
     <string name="agreement_acknowledgement">การดำเนินการต่อหมายความว่าคุณได้รับทราบและยอมรับเงื่อนไขเหล่านี้แล้ว</string>
     <string name="settings_title">การตั้งค่า</string>
-    <string name="settings_subtitle">ตัวควบคุมขณะทำงานสำหรับเส้นทางการยืนยันแบบออนไลน์</string>
+    <string name="settings_subtitle">การควบคุมการยืนยันออนไลน์และสถานะอัปเดต GitHub Nightly</string>
     <string name="settings_crl_title">อนุญาตรีเฟรช CRL ออนไลน์</string>
     <string name="settings_crl_summary">การตรวจสอบการเพิกถอน TEE ใช้ snapshot ในตัวเสมอ ตัวเลือกนี้อนุญาตเฉพาะการดึง Google attestation revocation feed ล่าสุด</string>
     <string name="settings_crl_footer">การเปลี่ยนแปลงมีผลกับการรีเฟรชออนไลน์ทันที การตรวจสอบการเพิกถอน TEE ในตัวยังคงเปิดใช้อยู่</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">แฮชบิลด์</string>
     <string name="about_label_privacy">ความเป็นส่วนตัว / การใช้ข้อมูล</string>
-    <string name="about_privacy_summary">การตรวจสอบทำงานภายในอุปกรณ์ ข้อมูลการเพิกถอน TEE ถูกฝังมากับแอป การรีเฟรช CRL ออนไลน์เป็นทางเลือกและจะเกิดขึ้นเมื่อคุณเปิดใช้ใน Settings เท่านั้น</string>
+    <string name="about_privacy_summary">การตรวจสอบทำงานภายในอุปกรณ์และไม่อัปโหลดผลลัพธ์ แอปเชื่อมต่อ GitHub หนึ่งครั้งต่อ cold start เพื่อรับข้อมูล Nightly ส่วนการรีเฟรช CRL ออนไลน์ยังเป็นทางเลือก</string>
     <string name="about_label_copy_build_info">คัดลอกข้อมูลบิลด์</string>
     <string name="about_copy_build_info_summary">คัดลอกเวอร์ชัน เวลาบิลด์ และแฮชบิลด์</string>
     <string name="about_clipboard_label">ข้อมูลบิลด์ Duck Detector</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">เวลาบิลด์ (UTC): %1$s UTC</string>
     <string name="about_clipboard_build_hash_line">แฮชบิลด์: %1$s</string>
     <string name="about_copy_toast">คัดลอกข้อมูลบิลด์แล้ว</string>
+    <string name="update_settings_label">ตรวจสอบอัปเดต</string>
+    <string name="update_status_idle">ตรวจสอบ GitHub Master Nightly หลัง cold start; แตะเพื่อตรวจตอนนี้</string>
+    <string name="update_status_checking">กำลังตรวจสอบ GitHub…</string>
+    <string name="update_status_current">คุณใช้ Nightly รุ่นล่าสุดแล้ว</string>
+    <string name="update_status_available">มี Nightly รุ่นใหม่; แตะเพื่อดูรายละเอียด</string>
+    <string name="update_status_failed">ตรวจสอบ GitHub ไม่สำเร็จ; แตะเพื่อลองใหม่</string>
+    <string name="update_dialog_title">มีอัปเดต Nightly</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">สาขาและ commit</string>
+    <string name="update_author_label">ผู้เขียน commit ล่าสุด</string>
+    <string name="update_time_label">อัปเดตเมื่อ</string>
+    <string name="update_changelog_title">การเปลี่ยนแปลงตั้งแต่รุ่นปัจจุบัน</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">ยังไม่แสดง commit อีก 1 รายการ</item>
+        <item quantity="other">ยังไม่แสดง commit อีก %1$d รายการ</item>
+    </plurals>
+    <string name="update_later">ภายหลัง</string>
+    <string name="update_view_changes">ดูการเปลี่ยนแปลงทั้งหมดบน GitHub</string>
+    <string name="update_download">เปิดหน้าดาวน์โหลด</string>
+    <string name="update_open_failed">ไม่มีเบราว์เซอร์สำหรับเปิด GitHub</string>
     <string name="author_summary_eltavine">มีส่วนร่วมด้าน UI, C++, ASM และ Kotlin</string>
     <string name="author_summary_baka">TEE และ Zygisk</string>
     <string name="author_summary_xiaotong">TEE (C++, Kotlin)</string>

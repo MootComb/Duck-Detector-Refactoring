@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">免責事項</string>
     <string name="disclaimer_content" formatted="false">重要なお知らせ:&#10;&#10;1. 検出の限界&#10;Duck Detector は端末のセキュリティ状態を検出するために複数の方法を使用しますが、どの方法も 100&#37; 正確ではありません。結果は最終判定ではなく、参考情報として扱ってください。&#10;&#10;2. 誤検出と見逃し&#10;このアプリは誤検出または見逃しを起こす可能性があります。より包括的な判断のために、専門的なセキュリティツールとご自身の確認を必ず併用してください。&#10;&#10;3. 責任の制限&#10;Duck Detector の開発者、貢献者、および配布者は、このアプリの使用または使用不能によって生じる直接的、間接的、付随的、特別、または結果的損害について責任を負いません。&#10;&#10;4. 第三者サービス&#10;TEE の失効確認は既定でアプリ内蔵スナップショットを使用します。オンライン失効データ更新を許可すると、アプリが Google attestation revocation endpoint に接続する場合があります。セキュリティスキャン自体は引き続き端末上でローカルに実行され、検出結果がスキャンテレメトリとして意図的にアップロードされることはありません。</string>
     <string name="privacy_notice_title">プライバシー通知</string>
-    <string name="privacy_notice_content" formatted="false">プライバシー概要: セキュリティチェックは端末上でローカルに実行されます。検出結果がスキャンテレメトリとして意図的にアップロードされることはありません。TEE の失効確認は既定でアプリ内蔵スナップショットを使用します。オンライン失効データ更新を許可すると、アプリが Google attestation revocation endpoint に接続する場合があります。</string>
+    <string name="privacy_notice_content" formatted="false">プライバシー概要: セキュリティチェックは端末上でローカルに実行され、検出結果がスキャンテレメトリとしてアップロードされることはありません。TEE の失効確認は既定で内蔵スナップショットを使用します。起動時の選択完了後、アプリはコールドスタートごとに GitHub へ一度接続し、Nightly 更新メタデータを確認します。</string>
     <string name="timer_elapsed">30 秒経過</string>
     <string name="timer_waiting">%1$d 秒お待ちください</string>
     <string name="fully_reviewed">全文確認済み</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">すべての条件を完了</string>
     <string name="agreement_acknowledgement">続行すると、これらの条件を読み同意したものとみなされます。</string>
     <string name="settings_title">設定</string>
-    <string name="settings_subtitle">オンライン検証経路のランタイム制御です。</string>
+    <string name="settings_subtitle">オンライン検証の制御と GitHub Nightly 更新状況です。</string>
     <string name="settings_crl_title">オンライン CRL 更新を許可</string>
     <string name="settings_crl_summary">TEE の失効確認は常に内蔵スナップショットを使用します。この設定は Google の最新 attestation revocation feed の取得だけを許可します。</string>
     <string name="settings_crl_footer">変更はオンライン更新の動作に即時反映されます。内蔵 TEE 失効確認は有効なままです。</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">ビルドハッシュ</string>
     <string name="about_label_privacy">プライバシー / データ利用</string>
-    <string name="about_privacy_summary">チェックは端末上でローカルに実行されます。TEE の失効データはアプリに内蔵されます。オンライン CRL 更新は任意で、設定で有効にした場合にのみ実行されます。</string>
+    <string name="about_privacy_summary">チェックは端末上で実行され、検出結果はアップロードされません。コールドスタートごとに GitHub へ一度接続して Nightly 更新メタデータを取得します。オンライン CRL 更新は任意です。</string>
     <string name="about_label_copy_build_info">ビルド情報をコピー</string>
     <string name="about_copy_build_info_summary">バージョン、ビルド時刻、ビルドハッシュをコピー</string>
     <string name="about_clipboard_label">Duck Detector ビルド情報</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">ビルド時刻 (UTC): %1$s UTC</string>
     <string name="about_clipboard_build_hash_line">ビルドハッシュ: %1$s</string>
     <string name="about_copy_toast">ビルド情報をコピーしました</string>
+    <string name="update_settings_label">更新を確認</string>
+    <string name="update_status_idle">コールドスタート後に GitHub Master Nightly を確認します。タップして今すぐ確認</string>
+    <string name="update_status_checking">GitHub を確認しています…</string>
+    <string name="update_status_current">最新の Nightly ビルドです</string>
+    <string name="update_status_available">新しい Nightly ビルドがあります。タップして詳細を表示</string>
+    <string name="update_status_failed">GitHub を確認できませんでした。タップして再試行</string>
+    <string name="update_dialog_title">Nightly 更新があります</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">ブランチとコミット</string>
+    <string name="update_author_label">最新コミットの作成者</string>
+    <string name="update_time_label">更新日時</string>
+    <string name="update_changelog_title">現在のビルド以降の変更</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">ほか 1 件のコミットは省略されています</item>
+        <item quantity="other">ほか %1$d 件のコミットは省略されています</item>
+    </plurals>
+    <string name="update_later">後で</string>
+    <string name="update_view_changes">GitHub ですべての変更を表示</string>
+    <string name="update_download">ダウンロードを開く</string>
+    <string name="update_open_failed">GitHub を開けるブラウザがありません</string>
     <string name="author_summary_eltavine">UI、C++、ASM、Kotlin を担当</string>
     <string name="author_summary_baka">TEE と Zygisk</string>
     <string name="author_summary_xiaotong">TEE (C++, Kotlin)</string>

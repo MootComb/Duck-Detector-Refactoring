@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">免责声明</string>
     <string name="disclaimer_content" formatted="false">重要提示：&#10;&#10;1. 检测局限性&#10;Duck Detector 使用多种方法检测设备安全状态，但没有任何检测方法能做到 100&#37; 准确。结果应视为提示信息，而非最终定论。&#10;&#10;2. 误报与漏报&#10;本应用可能出现误报或漏报。请始终结合专业安全工具与您自己的核验进行全面判断。&#10;&#10;3. 免责条款&#10;对于因使用或无法使用本应用而导致的任何直接、间接、附带、特殊或后果性损失，Duck Detector 的开发者、贡献者和分发者概不承担责任。&#10;&#10;4. 第三方服务&#10;TEE 吊销检查默认使用应用内置快照。如果您允许在线吊销库更新，应用可能会访问 Google 的 attestation revocation endpoint。安全扫描本身仍在您的设备本地执行，检测结果也不会被有意上传为扫描遥测。</string>
     <string name="privacy_notice_title">隐私说明</string>
-    <string name="privacy_notice_content" formatted="false">隐私摘要：安全检查在您的设备本地执行。检测结果不会被有意上传为扫描遥测。TEE 吊销检查默认使用应用内置快照；如果您允许在线吊销库更新，应用可能会访问 Google 的 attestation revocation endpoint。</string>
+    <string name="privacy_notice_content" formatted="false">隐私摘要：安全检查在您的设备本地执行，检测结果不会被有意上传为扫描遥测。TEE 吊销检查默认使用应用内置快照；如果您允许在线刷新，应用可能会访问 Google 的 attestation revocation endpoint。完成启动选项后，应用会在每次冷启动时访问一次 GitHub，以检查 Nightly 更新元数据。</string>
     <string name="timer_elapsed">已等待 30 秒</string>
     <string name="timer_waiting">请等待 %1$d 秒</string>
     <string name="fully_reviewed">已完整阅读</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">完成全部条件</string>
     <string name="agreement_acknowledgement">继续即表示您已阅读并同意这些条款。</string>
     <string name="settings_title">设置</string>
-    <string name="settings_subtitle">在线验证路径的运行时控制。</string>
+    <string name="settings_subtitle">在线验证控制与 GitHub Nightly 更新状态。</string>
     <string name="settings_crl_title">允许在线刷新 CRL</string>
     <string name="settings_crl_summary">TEE 吊销检查始终使用内置快照；此开关只允许获取 Google 最新 attestation revocation feed。</string>
     <string name="settings_crl_footer">更改会立即应用到在线刷新行为。内置 TEE 吊销检查始终保持启用。</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">构建哈希</string>
     <string name="about_label_privacy">隐私 / 数据使用</string>
-    <string name="about_privacy_summary">检查在设备本地运行。应用会内置 TEE 吊销快照；在线 CRL 刷新是可选的，仅会在您在设置中启用后执行。</string>
+    <string name="about_privacy_summary">检查在设备本地运行，不会上传检测结果。应用会在每次冷启动时访问一次 GitHub 获取 Nightly 更新元数据；在线 CRL 刷新仍为可选功能。</string>
     <string name="about_label_copy_build_info">复制构建信息</string>
     <string name="about_copy_build_info_summary">复制版本、构建时间和构建哈希</string>
     <string name="about_clipboard_label">Duck Detector 构建信息</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">构建时间（UTC）：%1$s UTC</string>
     <string name="about_clipboard_build_hash_line">构建哈希：%1$s</string>
     <string name="about_copy_toast">构建信息已复制</string>
+    <string name="update_settings_label">检查更新</string>
+    <string name="update_status_idle">冷启动后会检查 GitHub Master Nightly；点按可立即检查</string>
+    <string name="update_status_checking">正在检查 GitHub…</string>
+    <string name="update_status_current">当前已是最新 Nightly 构建</string>
+    <string name="update_status_available">有新的 Nightly 构建；点按查看详情</string>
+    <string name="update_status_failed">无法检查 GitHub；点按重试</string>
+    <string name="update_dialog_title">发现 Nightly 更新</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">分支与提交</string>
+    <string name="update_author_label">最新提交作者</string>
+    <string name="update_time_label">更新时间</string>
+    <string name="update_changelog_title">自当前构建以来的更改</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">另有 1 个提交未展示</item>
+        <item quantity="other">另有 %1$d 个提交未展示</item>
+    </plurals>
+    <string name="update_later">稍后</string>
+    <string name="update_view_changes">在 GitHub 查看全部更改</string>
+    <string name="update_download">前往下载</string>
+    <string name="update_open_failed">没有可用于打开 GitHub 的浏览器</string>
     <string name="tee_diagnostic_clipboard_label">TEE 诊断详情</string>
     <string name="tee_diagnostic_copied_toast">已复制诊断详情</string>
     <string name="author_summary_eltavine">负责 UI、C++、ASM 与 Kotlin。</string>

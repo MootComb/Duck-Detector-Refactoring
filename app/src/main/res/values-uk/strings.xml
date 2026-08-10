@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">Відмова від відповідальності</string>
     <string name="disclaimer_content" formatted="false">ВАЖЛИВЕ ПОВІДОМЛЕННЯ:&#10;&#10;1. Обмеження виявлення&#10;Duck Detector використовує різні методи для виявлення стану безпеки пристрою, але жоден метод виявлення не є на 100&#37; точним. Результати слід вважати індикаторами, а не остаточними оцінками.&#10;&#10;2. Помилкові спрацьовування та помилкові негативи&#10;Програма може давати хибно-позитивні або хибно-негативні результати. Завжди використовуйте професійні інструменти безпеки та власну перевірку для комплексної оцінки.&#10;&#10;3. Жодної відповідальності&#10;Розробники, учасники та розповсюджувачі Duck Detector не несуть відповідальності за будь-які прямі, непрямі, випадкові, спеціальні чи непрямі збитки, спричинені використанням або неможливістю використання цієї програми.&#10;&#10;4. Сторонні послуги&#10;Перевірки відкликання TEE за замовчуванням використовують вбудований у застосунок знімок. Якщо ви дозволите онлайн-оновлення даних відкликання, програма може зв’язатися з кінцевою точкою відкликання атестації Google. Самі сканування безпеки все ще виконуються локально на вашому пристрої, а результати детектора навмисно не завантажуються як телеметрія сканування.</string>
     <string name="privacy_notice_title">Повідомлення про конфіденційність</string>
-    <string name="privacy_notice_content" formatted="false">Короткий опис конфіденційності: перевірки безпеки виконуються локально на вашому пристрої. Результати детектора не навмисно завантажуються як сканована телеметрія. Перевірки відкликання TEE за замовчуванням використовують вбудований знімок; якщо ви дозволите онлайн-оновлення даних відкликання, програма може зв’язатися з кінцевою точкою відкликання атестації Google.</string>
+    <string name="privacy_notice_content" formatted="false">Короткий опис конфіденційності: перевірки безпеки виконуються локально, а результати не надсилаються як телеметрія. Перевірки відкликання TEE за замовчуванням використовують вбудований знімок. Після завершення початкових налаштувань застосунок один раз за кожного холодного запуску звертається до GitHub для перевірки метаданих Nightly.</string>
     <string name="timer_elapsed">Минуло 30 секунд</string>
     <string name="timer_waiting">Будь ласка, зачекайте %1$ds</string>
     <string name="fully_reviewed">Повністю переглянуто</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">Виконайте всі умови</string>
     <string name="agreement_acknowledgement">Продовжуючи, ви підтверджуєте, що прочитали ці умови та погоджуєтеся з ними.</string>
     <string name="settings_title">Налаштування</string>
-    <string name="settings_subtitle">Елементи керування часом виконання для шляхів онлайн-підтвердження.</string>
+    <string name="settings_subtitle">Керування онлайн-перевіркою та стан оновлення GitHub Nightly.</string>
     <string name="settings_crl_title">Дозволити онлайн-оновлення CRL</string>
     <string name="settings_crl_summary">Перевірки відкликання TEE завжди використовують вбудований знімок; цей перемикач лише дозволяє отримувати найновіший канал відкликання атестації Google.</string>
     <string name="settings_crl_footer">Зміни негайно застосовуються до онлайн-оновлення. Вбудовані перевірки відкликання TEE залишаються ввімкненими.</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">Хеш збірки</string>
     <string name="about_label_privacy">Конфіденційність / Використання даних</string>
-    <string name="about_privacy_summary">Перевірки виконуються локально на пристрої. Дані відкликання TEE вбудовані в застосунок; онлайн-оновлення CRL є необов’язковим і відбувається лише тоді, коли ви ввімкнете його в Налаштуваннях.</string>
+    <string name="about_privacy_summary">Перевірки виконуються локально, результати не надсилаються. Застосунок один раз за холодного запуску звертається до GitHub по метадані Nightly. Онлайн-оновлення CRL залишається необов’язковим.</string>
     <string name="about_label_copy_build_info">Копіювати інформацію про збірку</string>
     <string name="about_copy_build_info_summary">Копіювати версію, час збірки та хеш збірки</string>
     <string name="about_clipboard_label">Інформація про збірку Duck Detector</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">Час збірки (UTC): %1$s UTC</string>
     <string name="about_clipboard_build_hash_line">Хеш збірки: %1$s</string>
     <string name="about_copy_toast">Інформацію про збірку скопійовано</string>
+    <string name="update_settings_label">Перевірити оновлення</string>
+    <string name="update_status_idle">GitHub Master Nightly перевіряється після холодного запуску; торкніться, щоб перевірити зараз</string>
+    <string name="update_status_checking">Перевірка GitHub…</string>
+    <string name="update_status_current">У вас найновіша збірка Nightly</string>
+    <string name="update_status_available">Доступна новіша збірка Nightly; торкніться для подробиць</string>
+    <string name="update_status_failed">Не вдалося перевірити GitHub; торкніться, щоб повторити</string>
+    <string name="update_dialog_title">Доступне оновлення Nightly</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">Гілка та коміт</string>
+    <string name="update_author_label">Автор останнього коміту</string>
+    <string name="update_time_label">Оновлено</string>
+    <string name="update_changelog_title">Зміни після вашої збірки</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">Ще 1 коміт не показано</item>
+        <item quantity="other">Ще %1$d комітів не показано</item>
+    </plurals>
+    <string name="update_later">Пізніше</string>
+    <string name="update_view_changes">Переглянути всі зміни на GitHub</string>
+    <string name="update_download">Відкрити завантаження</string>
+    <string name="update_open_failed">Немає браузера для відкриття GitHub</string>
     <string name="tee_diagnostic_clipboard_label">Діагностичні дані TEE</string>
     <string name="tee_diagnostic_copied_toast">Діагностичні дані скопійовано</string>
 

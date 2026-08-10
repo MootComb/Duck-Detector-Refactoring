@@ -29,7 +29,7 @@ limitations under the License.
     <string name="disclaimer_title">免責聲明</string>
     <string name="disclaimer_content" formatted="false">重要提示：&#10;&#10;1. 檢測侷限性&#10;Duck Detector 使用多種方法檢測裝置安全狀態，但沒有任何檢測方法能做到 100&#37; 準確。結果應視為提示資訊，而非最終定論。&#10;&#10;2. 誤報與漏報&#10;本應用可能出現誤報或漏報。請務必結合專業安全工具與您自己的核驗進行全面判斷。&#10;&#10;3. 免責條款&#10;對於因使用或無法使用本應用而導致的任何直接、間接、附帶、特殊或後果性損失，Duck Detector 的開發者、貢獻者和散佈者概不承擔責任。&#10;&#10;4. 第三方服務&#10;TEE 吊銷檢查預設使用應用內建快照。如果您允許線上吊銷庫更新，應用可能會存取 Google 的 attestation revocation endpoint。安全掃描本身仍在您的裝置本地執行，檢測結果也不會被刻意上傳為掃描遙測。</string>
     <string name="privacy_notice_title">隱私說明</string>
-    <string name="privacy_notice_content" formatted="false">隱私摘要：安全檢查在您的裝置本地執行。檢測結果不會被刻意上傳為掃描遙測。TEE 吊銷檢查預設使用應用內建快照；如果您允許線上吊銷庫更新，應用可能會存取 Google 的 attestation revocation endpoint。</string>
+    <string name="privacy_notice_content" formatted="false">隱私摘要：安全檢查在您的裝置本地執行，檢測結果不會被刻意上傳為掃描遙測。TEE 吊銷檢查預設使用應用內建快照；如果您允許線上重新整理，應用可能會存取 Google 的 attestation revocation endpoint。完成啟動選項後，應用會在每次冷啟動時存取一次 GitHub，以檢查 Nightly 更新中繼資料。</string>
     <string name="timer_elapsed">已等待 30 秒</string>
     <string name="timer_waiting">請等待 %1$d 秒</string>
     <string name="fully_reviewed">已完整閱讀</string>
@@ -38,7 +38,7 @@ limitations under the License.
     <string name="complete_all_conditions">完成所有條件</string>
     <string name="agreement_acknowledgement">繼續即表示您已閱讀並同意這些條款。</string>
     <string name="settings_title">設定</string>
-    <string name="settings_subtitle">線上驗證路徑的執行階段控制。</string>
+    <string name="settings_subtitle">線上驗證控制與 GitHub Nightly 更新狀態。</string>
     <string name="settings_crl_title">允許線上重新整理 CRL</string>
     <string name="settings_crl_summary">TEE 吊銷檢查始終使用內建快照；此開關只允許取得 Google 最新 attestation revocation feed。</string>
     <string name="settings_crl_footer">變更會立即套用到線上重新整理行為。內建 TEE 吊銷檢查始終保持啟用。</string>
@@ -52,7 +52,7 @@ limitations under the License.
     <string name="about_value_build_time">%1$s UTC</string>
     <string name="about_label_build_hash">建置雜湊</string>
     <string name="about_label_privacy">隱私 / 資料使用</string>
-    <string name="about_privacy_summary">檢查在裝置本地執行。應用會內建 TEE 吊銷快照；線上 CRL 重新整理為可選功能，只有在您於設定中啟用後才會執行。</string>
+    <string name="about_privacy_summary">檢查在裝置本地執行，不會上傳檢測結果。應用會在每次冷啟動時存取一次 GitHub 取得 Nightly 更新中繼資料；線上 CRL 重新整理仍為可選功能。</string>
     <string name="about_label_copy_build_info">複製建置資訊</string>
     <string name="about_copy_build_info_summary">複製版本、建置時間與建置雜湊</string>
     <string name="about_clipboard_label">Duck Detector 建置資訊</string>
@@ -60,6 +60,26 @@ limitations under the License.
     <string name="about_clipboard_build_time_line">建置時間（UTC）：%1$s UTC</string>
     <string name="about_clipboard_build_hash_line">建置雜湊：%1$s</string>
     <string name="about_copy_toast">建置資訊已複製</string>
+    <string name="update_settings_label">檢查更新</string>
+    <string name="update_status_idle">冷啟動後會檢查 GitHub Master Nightly；輕觸可立即檢查</string>
+    <string name="update_status_checking">正在檢查 GitHub…</string>
+    <string name="update_status_current">目前已是最新 Nightly 建置</string>
+    <string name="update_status_available">有新的 Nightly 建置；輕觸查看詳情</string>
+    <string name="update_status_failed">無法檢查 GitHub；輕觸重試</string>
+    <string name="update_dialog_title">發現 Nightly 更新</string>
+    <string name="update_version_change">%1$s → %2$s</string>
+    <string name="update_branch_hash_label">分支與提交</string>
+    <string name="update_author_label">最新提交作者</string>
+    <string name="update_time_label">更新時間</string>
+    <string name="update_changelog_title">自目前建置以來的變更</string>
+    <plurals name="update_remaining_commits">
+        <item quantity="one">另有 1 個提交未顯示</item>
+        <item quantity="other">另有 %1$d 個提交未顯示</item>
+    </plurals>
+    <string name="update_later">稍後</string>
+    <string name="update_view_changes">在 GitHub 查看所有變更</string>
+    <string name="update_download">前往下載</string>
+    <string name="update_open_failed">沒有可用來開啟 GitHub 的瀏覽器</string>
     <string name="author_summary_eltavine">負責 UI、C++、ASM 與 Kotlin。</string>
     <string name="author_summary_baka">TEE 與 Zygisk</string>
     <string name="author_summary_xiaotong">TEE（C++、Kotlin）</string>

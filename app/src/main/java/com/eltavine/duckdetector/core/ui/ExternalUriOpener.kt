@@ -25,15 +25,19 @@ import androidx.browser.customtabs.CustomTabsIntent
 fun openExternalUri(context: Context, rawUri: String): Boolean {
     val uri = runCatching { Uri.parse(rawUri) }.getOrNull() ?: return false
     if (CustomTabsClient.getPackageName(context, null)?.isNotBlank() == true) {
-        CustomTabsIntent.Builder()
-            .build()
-            .launchUrl(context, uri)
-        return true
-    } else {
-        val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (intent.resolveActivity(context.packageManager) == null) {
-            return false
+        val customTabOpened = runCatching {
+            CustomTabsIntent.Builder()
+                .build()
+                .launchUrl(context, uri)
+        }.isSuccess
+        if (customTabOpened) {
+            return true
         }
-        return runCatching { context.startActivity(intent) }.isSuccess
     }
+
+    val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (intent.resolveActivity(context.packageManager) == null) {
+        return false
+    }
+    return runCatching { context.startActivity(intent) }.isSuccess
 }
