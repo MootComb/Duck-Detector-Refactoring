@@ -128,6 +128,7 @@ import com.eltavine.duckdetector.ui.shell.shouldCreateDetectorViewModels
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.eltavine.duckdetector.features.update.presentation.UpdateCheckStatus
 
 @Composable
 fun DuckDetectorApp() {
@@ -508,7 +509,7 @@ private fun AppReadyShell(
             versionCode = BuildConfig.VERSION_CODE,
             buildTimeUtc = BuildConfig.BUILD_TIME_UTC,
             buildHash = BuildConfig.BUILD_HASH,
-            updateStatus = "Idle",
+            updateStatus = UpdateCheckStatus.IDLE,
         )
     }
     val detectorTitlesNeedingAttention = remember(contributions) {
