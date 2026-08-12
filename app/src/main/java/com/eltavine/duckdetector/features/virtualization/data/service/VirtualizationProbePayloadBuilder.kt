@@ -77,8 +77,12 @@ internal object VirtualizationProbePayloadBuilder {
                     )
                     appendLine("PROC_MOUNT_VIEW_DETAIL=${mountView.detail.encodeValue()}")
                 }
-                appendLine("FILES_DIR=${appContext.filesDir.absolutePath.encodeValue()}")
-                appendLine("CACHE_DIR=${appContext.cacheDir.absolutePath.encodeValue()}")
+                // Isolated processes do not have the regular app data directory. Accessing
+                // filesDir/cacheDir here throws ENOENT and discards the mount-view payload.
+                if (profile != VirtualizationRemoteProfile.ISOLATED) {
+                    appendLine("FILES_DIR=${appContext.filesDir.absolutePath.encodeValue()}")
+                    appendLine("CACHE_DIR=${appContext.cacheDir.absolutePath.encodeValue()}")
+                }
                 appendLine("CODE_PATH=${appContext.applicationInfo.sourceDir.encodeValue()}")
                 snapshot.findings.forEach { finding ->
                     append("FINDING=")
