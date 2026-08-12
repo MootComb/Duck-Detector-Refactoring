@@ -19,7 +19,7 @@
       "cpp",
       "kotlin"
     ],
-    "contributions": 28,
+    "contributions": 29,
     "name": "XiaoTong6666",
     "avatarAssetPath": "github_contributors/avatars/xiaotong6666.jpg",
     "summaryKey": "author_summary_xiaotong",
@@ -59,6 +59,14 @@
     "login": "AlexLiuDev233"
   },
   {
+    "profileUrl": "https://github.com/vvb2060",
+    "contributionKeys": [],
+    "contributions": 4,
+    "name": "vvb2060",
+    "avatarAssetPath": "github_contributors/avatars/vvb2060.jpg",
+    "login": "vvb2060"
+  },
+  {
     "profileUrl": "https://github.com/Searchur",
     "contributionKeys": [
       "ui",
@@ -69,14 +77,6 @@
     "avatarAssetPath": "github_contributors/avatars/searchur.jpg",
     "summaryKey": "author_summary_searchur",
     "login": "Searchur"
-  },
-  {
-    "profileUrl": "https://github.com/vvb2060",
-    "contributionKeys": [],
-    "contributions": 3,
-    "name": "vvb2060",
-    "avatarAssetPath": "github_contributors/avatars/vvb2060.jpg",
-    "login": "vvb2060"
   },
   {
     "profileUrl": "https://github.com/NEURAX-FX",
