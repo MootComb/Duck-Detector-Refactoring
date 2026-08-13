@@ -2,8 +2,12 @@ name: Sync upstream
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:  # Manual trigger
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+env:
+  TARGET_WORKFLOW: 'release.yml'
+  TRIGGER_ONLY_ON_CHANGES: 'true'  # Control variable: set to 'false' to always trigger
 
 jobs:
   sync:
@@ -22,6 +26,24 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Get upstream repository info
+        id: get-upstream
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: repo } = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            if (repo.fork && repo.parent) {
+              core.setOutput('upstream_repo', repo.parent.full_name);
+              core.setOutput('upstream_branch', repo.parent.default_branch);
+            } else {
+              core.setOutput('upstream_repo', context.repo.owner + '/' + context.repo.repo);
+              core.setOutput('upstream_branch', repo.default_branch);
+            }
+      
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
@@ -29,32 +51,29 @@ jobs:
       
       - name: Add remote repository as upstream
         run: |
-          git remote add upstream https://github.com/eltavine/Duck-Detector-Refactoring
-          git fetch upstream
+          git remote add upstream https://github.com/${{ steps.get-upstream.outputs.upstream_repo }}
+          git fetch upstream ${{ steps.get-upstream.outputs.upstream_branch }}
       
       - name: Merge from remote repository (keep our files on conflicts)
         id: merge
         run: |
-          echo "🔄 Syncing from remote repository to MootComb..."
+          echo "🔄 Syncing from ${{ steps.get-upstream.outputs.upstream_repo }}:${{ steps.get-upstream.outputs.upstream_branch }} to current repository..."
           
-          # Try to merge
-          if git merge --no-commit --no-ff upstream/master; then
+          if git merge --no-commit --no-ff upstream/${{ steps.get-upstream.outputs.upstream_branch }}; then
             echo "✅ Merge successful, no conflicts"
-            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+            echo "has_changes=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ Conflicts detected! Keeping OUR files (MootComb)..."
+            echo "⚠️ Conflicts detected! Keeping our files..."
             
-            # Get conflicted files
             CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
             
             if [ -z "$CONFLICT_FILES" ]; then
               echo "❌ No conflicted files found, but merge failed"
               git merge --abort
-              echo "HAS_CHANGES=false" >> $GITHUB_ENV
+              echo "has_changes=false" >> $GITHUB_OUTPUT
               exit 0
             fi
             
-            # For each conflicted file, take OUR version
             for file in $CONFLICT_FILES; do
               echo "  🛡️ Keeping our file: $file"
               git checkout --ours "$file" 2>/dev/null || true
@@ -62,46 +81,55 @@ jobs:
             done
             
             echo "✅ Conflicts resolved in favor of our files"
-            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+            echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
       
       - name: Commit and push changes
-        if: env.HAS_CHANGES == 'true'
+        if: steps.merge.outputs.has_changes == 'true'
         id: push
         run: |
-          # Check if there are changes to commit
           if git diff --cached --quiet; then
             echo "ℹ️ No changes to commit"
             echo "pushed=false" >> $GITHUB_OUTPUT
           else
-            git commit -m "Sync: merged from remote repository (kept our files) $(date -u '+%Y-%m-%d %H:%M:%S')"
-            git push origin master
-            echo "✅ Changes pushed to MootComb!"
+            git commit -m "Sync: merged from ${{ steps.get-upstream.outputs.upstream_repo }}:${{ steps.get-upstream.outputs.upstream_branch }} $(date -u '+%Y-%m-%d %H:%M:%S')"
+            git push origin ${{ github.ref_name }}
+            echo "✅ Changes pushed successfully!"
             echo "pushed=true" >> $GITHUB_OUTPUT
           fi
       
       - name: Set output
         id: check-push
         run: |
-          if [ "${{ steps.push.outputs.pushed }}" == "true" ] || [ "${{ env.HAS_CHANGES }}" == "true" ]; then
+          if [ "${{ steps.push.outputs.pushed }}" == "true" ]; then
             echo "pushed=true" >> $GITHUB_OUTPUT
           else
             echo "pushed=false" >> $GITHUB_OUTPUT
           fi
 
-  trigger-build:
+  trigger-release:
     needs: sync
     if: needs.sync.outputs.pushed == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger build workflow
+      - name: Check if trigger is enabled
+        id: check-trigger
+        run: |
+          if [ "${{ env.TRIGGER_ONLY_ON_CHANGES }}" == "true" ]; then
+            echo "trigger_enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "trigger_enabled=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Trigger release workflow
+        if: steps.check-trigger.outputs.trigger_enabled == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: workflow } = await github.rest.actions.createWorkflowDispatch({
+            await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'build.yml',
+              workflow_id: '${{ env.TARGET_WORKFLOW }}',
               ref: 'master'
             });
-            console.log('✅ Build workflow triggered successfully!');
+            console.log('✅ ${{ env.TARGET_WORKFLOW }} workflow triggered successfully!');
