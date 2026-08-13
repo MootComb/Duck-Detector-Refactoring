@@ -123,8 +123,10 @@ class DuckDetectorAndroidApplicationConventionPlugin : Plugin<Project> {
                         getDefaultProguardFile("proguard-android-optimize.txt"),
                         "proguard-rules.pro",
                     )
-                    if (hasReleaseSigning.get()) {
-                        signingConfig = signingConfigs.getByName("ciRelease")
+                    signingConfig = if (hasReleaseSigning.get()) {
+                         signingConfigs.getByName("ciRelease")
+                    } else {
+                         signingConfigs.getByName("debug")
                     }
                 }
             }
