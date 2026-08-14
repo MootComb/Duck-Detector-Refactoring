@@ -148,17 +148,16 @@ class ProcMountViewScanner(
     ): ProcMountViewScanResult {
         var expectedViewCount = 1
         val views = linkedSetOf<String>()
-        var tokenHit = false
-        var tokenKind = ""
-        var tokenHitDetail = ""
         var readablePidCount = 0
+        var scannedPidCount = 0
 
-        pids.forEach { pid ->
+        for (pid in pids) {
+            scannedPidCount += 1
             val mounts = runCatching { lineReader(pid) }
                 .getOrDefault(emptyList())
                 .mapNotNull { line -> ParsedProcMount.parse(line) }
             if (mounts.isEmpty()) {
-                return@forEach
+                continue
             }
             readablePidCount += 1
             if (mounts.first().optional.startsWith("shared")) {
@@ -173,13 +172,27 @@ class ProcMountViewScanner(
             // Match PrivIsolated's canonical order before hashing the table. 先规范排序再比较，
             // 避免相同 mount tree 仅因内核枚举顺序不同而被误判成两个视图。
             val builder = StringBuilder()
-            sorted.forEach { mount ->
+            for (mount in sorted) {
                 val signature = mount.signature()
                 val matchedToken = ROOT_TOKEN_SEQUENCES.firstOrNull { signature.contains(it) }
-                if (!tokenHit && matchedToken != null) {
-                    tokenHit = true
-                    tokenKind = matchedToken
-                    tokenHitDetail = mount.rawLine
+                if (matchedToken != null) {
+                    return ProcMountViewScanResult(
+                        available = true,
+                        distinctViewCount = views.size,
+                        expectedViewCount = expectedViewCount,
+                        scannedPidCount = scannedPidCount,
+                        tokenHit = true,
+                        tokenKind = matchedToken,
+                        tokenHitDetail = mount.rawLine,
+                        detail = buildString {
+                            append("Scanned ")
+                            append(scannedPidCount)
+                            append(" pid(s), ")
+                            append(readablePidCount)
+                            append(" readable mount table(s).\nDirect root token: ")
+                            append(mount.rawLine)
+                        },
+                    )
                 }
                 builder.append(signature).append('\n')
             }
@@ -191,13 +204,13 @@ class ProcMountViewScanner(
                 available = false,
                 distinctViewCount = 0,
                 expectedViewCount = expectedViewCount,
-                scannedPidCount = pids.size,
+                scannedPidCount = scannedPidCount,
                 tokenHit = false,
                 tokenKind = "",
                 tokenHitDetail = "",
                 detail = buildString {
                     append("Scanned ")
-                    append(pids.size)
+                    append(scannedPidCount)
                     append(" pid(s) but no process mount table was readable; cross-process mount view comparison is unavailable.")
                 },
             )
@@ -207,13 +220,13 @@ class ProcMountViewScanner(
             available = true,
             distinctViewCount = views.size,
             expectedViewCount = expectedViewCount,
-            scannedPidCount = pids.size,
-            tokenHit = tokenHit,
-            tokenKind = tokenKind,
-            tokenHitDetail = tokenHitDetail,
+            scannedPidCount = scannedPidCount,
+            tokenHit = false,
+            tokenKind = "",
+            tokenHitDetail = "",
             detail = buildString {
                 append("Scanned ")
-                append(pids.size)
+                append(scannedPidCount)
                 append(" pid(s), ")
                 append(readablePidCount)
                 append(" readable mount table(s), ")
@@ -221,10 +234,6 @@ class ProcMountViewScanner(
                 append(" distinct view(s), expected ")
                 append(expectedViewCount)
                 append('.')
-                if (tokenHit) {
-                    append("\nDirect root token: ")
-                    append(tokenHitDetail)
-                }
             },
         )
     }
