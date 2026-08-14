@@ -51,16 +51,14 @@ namespace duckdetector::nativeroot {
 
     }  // namespace
 
-    Snapshot collect_snapshot(const bool skip_ksu_supercall) {
+    Snapshot collect_snapshot() {
         Snapshot snapshot;
         snapshot.available = true;
 
         const ProbeResult prctl_probe = run_prctl_probe();
         const ProbeResult susfs_probe = run_susfs_probe();
         const ProbeResult self_process_ioc_probe = run_self_process_ioc_probe();
-        // Xiaomi-family devices are known to hard-crash on the sacrificial reboot syscall path.
-        const ProbeResult ksu_supercall_probe =
-                skip_ksu_supercall ? ProbeResult{} : run_ksu_supercall_probe();
+        const ProbeResult ksu_supercall_probe = run_ksu_supercall_probe();
         const ProbeResult kernelpatch_supercall_latency_probe = run_kernelpatch_supercall_latency_check();
         const ProbeResult devpts_abnormal_permission_probe = run_devpts_permission_check();
         const ProbeResult path_probe = run_path_probe();

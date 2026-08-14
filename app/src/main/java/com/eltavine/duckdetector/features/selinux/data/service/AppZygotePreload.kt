@@ -36,7 +36,7 @@ class AppZygotePreload : ZygotePreload {
     private val policyloadSeqnoProbe = SelinuxPolicyloadSeqnoProbe()
 
     override fun doPreload(appInfo: ApplicationInfo) {
-        val payload = runCatching {
+        val payload = try {
             val currentUid = Os.getuid()
             val baseSnapshot = collectBaseSnapshot(currentUid, appInfo.uid)
             val snapshot = augmentPreloadSnapshot(
@@ -49,8 +49,14 @@ class AppZygotePreload : ZygotePreload {
                 checkAccess = ::checkSelinuxAccess,
             )
             SelinuxContextValidityPayloadCodec.encode(snapshot)
-        }.getOrElse { throwable ->
+        } catch (throwable: Throwable) {
             fallbackPayload(throwable.message ?: "SELinux app zygote preload failed.")
+        } finally {
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+                // AOSP Q/R/S: https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android11-release/core/jni/fd_utils.cpp
+                // Restat() rejects AVC's AF_NETLINK socket; Q/R/S：该 socket 不符合 FD 检查，需清理。
+                SelinuxContextValidityBridge.closeProcessLocalAvc()
+            }
         }
         SelinuxContextValidityBridge.setPreloadedRawData(payload)
     }

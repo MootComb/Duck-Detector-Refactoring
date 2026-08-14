@@ -17,10 +17,15 @@
 package com.eltavine.duckdetector
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.platform.ComposeView
 import com.eltavine.duckdetector.core.startup.preload.EarlyMountPreloadStore
 import com.eltavine.duckdetector.core.startup.preload.EarlyVirtualizationPreloadStore
 import com.eltavine.duckdetector.ui.DuckDetectorApp
@@ -28,12 +33,28 @@ import com.eltavine.duckdetector.ui.theme.DuckDetectorTheme
 
 class MainActivity : ComponentActivity() {
 
+    private var procMountSampler: WebView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         EarlyMountPreloadStore.capture(intent)
         EarlyVirtualizationPreloadStore.capture(intent)
         enableEdgeToEdge()
-        setContent {
+        procMountSampler = createProcMountSampler()
+        val root = FrameLayout(this)
+        procMountSampler?.let { sampler ->
+            root.addView(sampler, FrameLayout.LayoutParams(1, 1))
+        }
+        val composeView = ComposeView(this)
+        root.addView(
+            composeView,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        setContentView(root)
+        composeView.setContent {
             DuckDetectorTheme {
                 DuckDetectorApp()
             }
@@ -45,5 +66,33 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         EarlyMountPreloadStore.capture(intent)
         EarlyVirtualizationPreloadStore.capture(intent)
+    }
+
+    override fun onDestroy() {
+        val sampler = procMountSampler
+        (sampler?.parent as? ViewGroup)?.removeView(sampler)
+        sampler?.destroy()
+        procMountSampler = null
+        super.onDestroy()
+    }
+
+    private fun createProcMountSampler(): WebView? {
+        // Attach this before starting Compose, matching PrivIsolated's WebView-before-bind order.
+        return runCatching {
+            WebView(this).apply {
+                alpha = 0f
+                isClickable = false
+                isFocusable = false
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                setBackgroundColor(Color.TRANSPARENT)
+                loadDataWithBaseURL(
+                    null,
+                    "<html><body></body></html>",
+                    "text/html",
+                    Charsets.UTF_8.name(),
+                    null,
+                )
+            }
+        }.getOrNull()
     }
 }

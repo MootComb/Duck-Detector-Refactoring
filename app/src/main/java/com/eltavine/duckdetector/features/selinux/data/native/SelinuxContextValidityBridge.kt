@@ -228,6 +228,8 @@ open class SelinuxContextValidityBridge {
 
     private external fun nativeCollectContextValiditySnapshotInternal(): String
 
+    private external fun nativeCloseProcessLocalAvc()
+
     companion object {
         @Volatile
         private var preloadedRawData: String? = null
@@ -241,6 +243,13 @@ open class SelinuxContextValidityBridge {
         @JvmStatic
         fun nativeCollectContextValiditySnapshot(): String {
             return SelinuxContextValidityBridge().nativeCollectContextValiditySnapshotInternal()
+        }
+
+        @JvmStatic
+        fun closeProcessLocalAvc() {
+            if (nativeLoaded) {
+                runCatching { SelinuxContextValidityBridge().nativeCloseProcessLocalAvc() }
+            }
         }
 
         @JvmStatic

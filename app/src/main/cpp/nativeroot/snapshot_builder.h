@@ -21,7 +21,7 @@
 
 namespace duckdetector::nativeroot {
 
-Snapshot collect_snapshot(bool skip_ksu_supercall);
+Snapshot collect_snapshot();
 
 }  // namespace duckdetector::nativeroot
 

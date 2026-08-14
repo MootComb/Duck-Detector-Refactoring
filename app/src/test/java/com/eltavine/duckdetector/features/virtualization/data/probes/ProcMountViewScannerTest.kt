@@ -67,14 +67,21 @@ class ProcMountViewScannerTest {
             "22 25 8:1 / / rw,relatime - ext4 /dev/block/dm-2 rw,seclabel",
             "40 22 8:1 /magisk /system rw,seclabel - overlay overlay ro,seclabel",
         )
+        var reads = 0
         val result = scanner.evaluate(
-            pids = listOf("1000", "2000"),
-            lineReader = { pid -> if (pid == "2000") magiskView else cleanMountInfo },
+            pids = listOf("1000", "2000", "3000"),
+            lineReader = { pid ->
+                reads += 1
+                if (pid == "2000") magiskView else cleanMountInfo
+            },
         )
 
         assertTrue(result.available)
         assertTrue(result.tokenHit)
-        assertTrue(result.tokenHitDetail.contains("magisk"))
+        assertEquals("magisk", result.tokenKind)
+        assertEquals(magiskView[1], result.tokenHitDetail)
+        assertEquals(2, reads)
+        assertEquals(2, result.scannedPidCount)
     }
 
     @Test

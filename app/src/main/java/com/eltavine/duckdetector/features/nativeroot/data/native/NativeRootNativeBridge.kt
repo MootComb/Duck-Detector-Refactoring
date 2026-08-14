@@ -16,29 +16,12 @@
 
 package com.eltavine.duckdetector.features.nativeroot.data.native
 
-import android.os.Build
-import android.util.Log
-
 class NativeRootNativeBridge {
 
     fun collectSnapshot(): NativeRootNativeSnapshot {
-        val skipKsuSupercall = shouldSkipKsuSupercall(
-            manufacturer = Build.MANUFACTURER,
-            brand = Build.BRAND,
-        )
         return runCatching {
-            parse(nativeCollectSnapshot(skipKsuSupercall))
+            parse(nativeCollectSnapshot())
         }.getOrDefault(NativeRootNativeSnapshot())
-    }
-
-    internal fun shouldSkipKsuSupercall(
-        manufacturer: String?,
-        brand: String?,
-    ): Boolean {
-        val normalizedManufacturer = manufacturer.orEmpty().trim().lowercase()
-        val normalizedBrand = brand.orEmpty().trim().lowercase()
-        return normalizedManufacturer in KSU_SUPERCALL_BLOCKLIST ||
-            normalizedBrand in KSU_SUPERCALL_BLOCKLIST
     }
 
     internal fun parse(raw: String): NativeRootNativeSnapshot {
@@ -186,11 +169,9 @@ class NativeRootNativeBridge {
         }
     }
 
-    private external fun nativeCollectSnapshot(skipKsuSupercall: Boolean): String
+    private external fun nativeCollectSnapshot(): String
 
     companion object {
-        private val KSU_SUPERCALL_BLOCKLIST = setOf("xiaomi", "redmi", "poco")
-
         init {
             runCatching { System.loadLibrary("duckdetector") }
         }
