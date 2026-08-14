@@ -82,6 +82,8 @@ namespace duckdetector::selinux {
 
     ContextValidityProbeSnapshot collect_context_validity_snapshot(JNIEnv *env);
 
+    void close_process_local_avc();
+
 }  // namespace duckdetector::selinux
 
 #endif  // DUCKDETECTOR_SELINUX_CONTEXT_VALIDITY_PROBE_H

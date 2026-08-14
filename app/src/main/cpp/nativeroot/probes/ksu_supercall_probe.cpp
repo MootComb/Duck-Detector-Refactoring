@@ -16,6 +16,7 @@
 
 #include "nativeroot/probes/ksu_supercall_probe.h"
 
+#include <cerrno>
 #include <csignal>
 #include <cstdint>
 #include <string>
@@ -58,6 +59,11 @@ namespace duckdetector::nativeroot {
 
         constexpr unsigned long kKsuIoctlGetInfo = _IOC(_IOC_READ, 'K', 2, 0);
         constexpr unsigned long kKsuIoctlCheckSafemode = _IOC(_IOC_READ, 'K', 5, 0);
+        constexpr int kSeccompBlockedExitCode = 125;
+
+        void handle_seccomp_sigsys(int, siginfo_t *, void *) {
+            _exit(kSeccompBlockedExitCode);
+        }
 
         bool collect_child_packet(
                 KsuSupercallPacket &packet,
@@ -71,6 +77,8 @@ namespace duckdetector::nativeroot {
             fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC);
             fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
 
+            // AOSP R: https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android11-release/core/jni/com_android_internal_os_Zygote.cpp
+            // Keep the seccomp SIGSYS at a child boundary; AOSP R：隔离 SIGSYS。
             const pid_t pid = fork();
             if (pid < 0) {
                 close(pipe_fds[0]);
@@ -82,6 +90,16 @@ namespace duckdetector::nativeroot {
                 close(pipe_fds[0]);
 
                 KsuSupercallPacket child_packet{};
+                // Convert SIGSYS into a child status for the parent.
+                // 将 SIGSYS 转为子进程状态，由父进程读取。
+                struct sigaction sigsys_action{};
+                sigsys_action.sa_sigaction = handle_seccomp_sigsys;
+                sigsys_action.sa_flags = SA_SIGINFO;
+                sigemptyset(&sigsys_action.sa_mask);
+                if (sigaction(SIGSYS, &sigsys_action, nullptr) != 0) {
+                    _exit(126);
+                }
+
 #if defined(__NR_reboot)
                 int driver_fd = -1;
                 syscall(
@@ -121,13 +139,22 @@ namespace duckdetector::nativeroot {
             close(pipe_fds[1]);
 
             int status = 0;
-            if (waitpid(pid, &status, 0) < 0) {
+            pid_t waited_pid;
+            do {
+                waited_pid = waitpid(pid, &status, 0);
+            } while (waited_pid < 0 && errno == EINTR);
+            if (waited_pid < 0) {
                 close(pipe_fds[0]);
                 return false;
             }
 
             const ssize_t bytes_read = read(pipe_fds[0], &packet, sizeof(packet));
             close(pipe_fds[0]);
+
+            if (WIFEXITED(status) && WEXITSTATUS(status) == kSeccompBlockedExitCode) {
+                blocked_by_seccomp = true;
+                return false;
+            }
 
             if (WIFSIGNALED(status) && WTERMSIG(status) == SIGSYS) {
                 blocked_by_seccomp = true;

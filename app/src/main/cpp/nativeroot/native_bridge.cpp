@@ -32,13 +32,12 @@ namespace {
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_eltavine_duckdetector_features_nativeroot_data_native_NativeRootNativeBridge_nativeCollectSnapshot(
         JNIEnv *env,
-        jobject,
-        jboolean skip_ksu_supercall
+        jobject
 ) {
     return to_jstring(
             env,
             duckdetector::nativeroot::encode_snapshot(
-                    duckdetector::nativeroot::collect_snapshot(skip_ksu_supercall == JNI_TRUE)
+                    duckdetector::nativeroot::collect_snapshot()
             )
     );
 }

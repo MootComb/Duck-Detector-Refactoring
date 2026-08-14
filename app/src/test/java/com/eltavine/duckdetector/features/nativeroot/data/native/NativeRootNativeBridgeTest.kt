@@ -106,28 +106,19 @@ class NativeRootNativeBridgeTest {
     }
 
     @Test
-    fun `should skip ksu supercall on xiaomi family devices`() {
-        assertTrue(
-            bridge.shouldSkipKsuSupercall(
-                manufacturer = "Xiaomi",
-                brand = "Redmi",
-            )
+    fun `parse preserves seccomp blocked supercall state`() {
+        val snapshot = bridge.parse(
+            """
+                AVAILABLE=1
+                KSU_SUPERCALL_ATTEMPTED=1
+                KSU_SUPERCALL_BLOCKED=1
+            """.trimIndent(),
         )
-        assertTrue(
-            bridge.shouldSkipKsuSupercall(
-                manufacturer = "POCO",
-                brand = "poco",
-            )
-        )
+
+        assertTrue(snapshot.available)
+        assertTrue(snapshot.ksuSupercallAttempted)
+        assertTrue(snapshot.ksuSupercallBlocked)
+        assertFalse(snapshot.ksuSupercallProbeHit)
     }
 
-    @Test
-    fun `should keep ksu supercall on non xiaomi devices`() {
-        assertFalse(
-            bridge.shouldSkipKsuSupercall(
-                manufacturer = "Google",
-                brand = "google",
-            )
-        )
-    }
 }

@@ -284,3 +284,11 @@ Java_com_eltavine_duckdetector_features_selinux_data_native_SelinuxContextValidi
         );
     }
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_eltavine_duckdetector_features_selinux_data_native_SelinuxContextValidityBridge_nativeCloseProcessLocalAvc(
+        JNIEnv *,
+        jobject
+) {
+    duckdetector::selinux::close_process_local_avc();
+}

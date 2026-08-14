@@ -148,6 +148,9 @@ namespace duckdetector::selinux {
         };
 
         std::atomic<unsigned int> g_dirty_policy_probe_counter{0};
+        std::atomic<bool> g_selinux_access_attempted{false};
+
+        using AvcDestroyFn = void (*)();
 
         std::string trim(std::string value) {
             while (!value.empty() &&
@@ -509,6 +512,7 @@ namespace duckdetector::selinux {
                 void *auditdata = nullptr
         ) {
             if (symbols.check_access != nullptr) {
+                g_selinux_access_attempted.store(true, std::memory_order_relaxed);
                 errno = 0;
                 const int result = symbols.check_access(source, target, target_class, permission, auditdata);
                 const int call_errno = errno;
@@ -845,6 +849,26 @@ namespace duckdetector::selinux {
         }
 
     }  // namespace
+
+    void close_process_local_avc() {
+        // AOSP R: https://android.googlesource.com/platform/external/selinux/+/refs/heads/android11-release/libselinux/src/avc.c
+        // avc_destroy() calls avc_netlink_close(); AOSP R：关闭 netlink FD，保留结果。
+        if (!g_selinux_access_attempted.exchange(false, std::memory_order_relaxed)) {
+            return;
+        }
+
+#ifdef RTLD_NOLOAD
+        void *handle = dlopen("libselinux.so", RTLD_NOW | RTLD_NOLOAD);
+        if (handle == nullptr) {
+            return;
+        }
+        const auto destroy = reinterpret_cast<AvcDestroyFn>(dlsym(handle, "avc_destroy"));
+        if (destroy != nullptr) {
+            destroy();
+        }
+        dlclose(handle);
+#endif
+    }
 
     ContextValidityProbeSnapshot collect_context_validity_snapshot(JNIEnv *env) {
         ContextValidityProbeSnapshot snapshot;
