@@ -59,6 +59,7 @@ class SoterCapabilityProbeTest {
                     supportExpected = true,
                     simplifiedChineseLocale = true,
                     servicePackageVisible = false,
+                    biometricAuthenticationAvailable = false,
                 )
             },
         ).inspect()
@@ -67,6 +68,30 @@ class SoterCapabilityProbeTest {
         assertFalse(state.damaged)
         assertTrue(state.abnormalEnvironment)
         assertTrue(state.summary.contains("abnormal soter environment", ignoreCase = true))
+    }
+
+    @Test
+    fun `available biometric suppresses abnormal environment heuristic`() {
+        val client = FakeSoterClient(
+            nativeSupport = true,
+            coreType = SoterCore.IS_TREBLE,
+            trebleConnected = false,
+        )
+
+        val state = SoterCapabilityProbe(
+            client = client,
+            environmentInspector = SoterEnvironmentInspector {
+                SoterEnvironmentSnapshot(
+                    supportExpected = true,
+                    simplifiedChineseLocale = true,
+                    servicePackageVisible = false,
+                    biometricAuthenticationAvailable = true,
+                )
+            },
+        ).inspect()
+
+        assertFalse(state.abnormalEnvironment)
+        assertTrue(state.summary.contains("Soter check skipped", ignoreCase = true))
     }
 
     @Test

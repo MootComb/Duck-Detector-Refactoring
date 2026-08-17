@@ -18,6 +18,7 @@ package com.eltavine.duckdetector.features.tee.data.soter
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.biometrics.BiometricManager
 import android.os.Build
 import java.util.Locale
 
@@ -25,9 +26,13 @@ internal data class SoterEnvironmentSnapshot(
     val supportExpected: Boolean = false,
     val simplifiedChineseLocale: Boolean = false,
     val servicePackageVisible: Boolean = true,
+    val biometricAuthenticationAvailable: Boolean = false,
 ) {
     val abnormalEnvironment: Boolean
-        get() = supportExpected && simplifiedChineseLocale && !servicePackageVisible
+        get() = supportExpected &&
+            simplifiedChineseLocale &&
+            !servicePackageVisible &&
+            !biometricAuthenticationAvailable
 }
 
 internal fun interface SoterEnvironmentInspector {
@@ -47,7 +52,19 @@ internal class AndroidSoterEnvironmentInspector(
             supportExpected = supportCatalog.expectsSupport(),
             simplifiedChineseLocale = isSimplifiedChinese(locale),
             servicePackageVisible = isPackageVisible(SOTER_SERVICE_PACKAGE),
+            biometricAuthenticationAvailable = isBiometricAuthenticationAvailable(),
         )
+    }
+
+    @Suppress("DEPRECATION")
+    private fun isBiometricAuthenticationAvailable(): Boolean {
+        val biometricManager = appContext.getSystemService(BiometricManager::class.java) ?: return false
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        } else {
+            biometricManager.canAuthenticate()
+        }
+        return result == BiometricManager.BIOMETRIC_SUCCESS
     }
 
     @Suppress("DEPRECATION")
