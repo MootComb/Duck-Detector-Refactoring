@@ -44,6 +44,16 @@ class KernelCheckNativeBridge {
                 .orEmpty(),
             procCmdline = entries.firstOrNull { it.first == "PROC_CMDLINE" }?.second?.decodeValue()
                 .orEmpty(),
+            utsRelease = entries.firstOrNull { it.first == "UTS_RELEASE" }?.second?.decodeValue()
+                .orEmpty(),
+            utsVersion = entries.firstOrNull { it.first == "UTS_VERSION" }?.second?.decodeValue()
+                .orEmpty(),
+            sysctlOsRelease = entries.firstOrNull { it.first == "SYSCTL_OSRELEASE" }
+                ?.second?.decodeValue()
+                .orEmpty(),
+            sysctlVersion = entries.firstOrNull { it.first == "SYSCTL_VERSION" }
+                ?.second?.decodeValue()
+                .orEmpty(),
             suspiciousCmdline = entries.firstOrNull { it.first == "CMDLINE" }?.second == "1",
             kptrExposed = entries.firstOrNull { it.first == "KPTR" }?.second == "1",
             findings = entries.filter { it.first == "FINDING" }.map { it.second.decodeValue() },

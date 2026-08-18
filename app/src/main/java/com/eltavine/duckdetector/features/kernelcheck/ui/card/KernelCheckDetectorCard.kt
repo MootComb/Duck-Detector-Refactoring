@@ -121,7 +121,7 @@ fun KernelCheckDetectorCard(
 private fun KernelCheckCollapsedOverview(
     model: KernelCheckCardModel,
 ) {
-    val naming = model.headerFacts.firstOrNull { it.label == "Naming" } ?: return
+    val identity = model.headerFacts.firstOrNull { it.label == "Identity" } ?: return
     val boot = model.headerFacts.firstOrNull { it.label == "Boot" } ?: return
     val behavior = model.headerFacts.firstOrNull { it.label == "Behavior" } ?: return
     val native = model.headerFacts.firstOrNull { it.label == "Native" } ?: return
@@ -132,7 +132,7 @@ private fun KernelCheckCollapsedOverview(
         verticalAlignment = Alignment.Top,
     ) {
         KernelCheckFactPairCard(
-            primary = naming,
+            primary = identity,
             secondary = boot,
             modifier = Modifier.weight(1f),
         )

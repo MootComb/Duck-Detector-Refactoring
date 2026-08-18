@@ -17,6 +17,8 @@
 package com.eltavine.duckdetector.features.kernelcheck.data.repository
 
 import com.eltavine.duckdetector.features.kernelcheck.data.native.KernelCheckNativeBridge
+import com.eltavine.duckdetector.features.kernelcheck.data.native.KernelCheckNativeSnapshot
+import com.eltavine.duckdetector.features.kernelcheck.data.utils.KernelIdentityConsistencyUtils
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckFinding
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckCvePatchState
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckFindingSeverity
@@ -24,6 +26,8 @@ import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckMethodOu
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckMethodResult
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckReport
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckStage
+import com.eltavine.duckdetector.features.kernelcheck.domain.KernelIdentityField
+import com.eltavine.duckdetector.features.kernelcheck.domain.KernelIdentityRead
 import java.io.File
 import java.util.LinkedHashSet
 import java.util.concurrent.TimeUnit
@@ -32,6 +36,8 @@ import kotlinx.coroutines.withContext
 
 class KernelCheckRepository(
     private val nativeBridge: KernelCheckNativeBridge = KernelCheckNativeBridge(),
+    private val identityConsistencyUtils: KernelIdentityConsistencyUtils =
+        KernelIdentityConsistencyUtils(),
 ) {
 
     suspend fun scan(): KernelCheckReport = withContext(Dispatchers.IO) {
@@ -160,6 +166,12 @@ class KernelCheckRepository(
             )
         }
 
+        val identityReads = collectIdentityReads(nativeSnapshot, procVersion)
+        val identityMismatch = identityConsistencyUtils.detectMismatch(identityReads)
+        if (identityMismatch != null) {
+            dangerFindings += identityMismatch
+        }
+
         val cmdlineMatches = nativeSnapshot.findings.details("CMDLINE|CRITICAL|")
             .ifEmpty { detectCriticalCmdlineFallback(procCmdline) }
         if (cmdlineMatches.isNotEmpty()) {
@@ -201,6 +213,7 @@ class KernelCheckRepository(
             infoFindings = infoFindings,
             cveAssessment = cveAssessment,
             nativeAvailable = nativeSnapshot.available,
+            comparedIdentityFields = identityConsistencyUtils.comparedFields(identityReads),
         )
 
         return KernelCheckReport(
@@ -218,6 +231,24 @@ class KernelCheckRepository(
             checkedKeywordCount = KEYWORD_SCAN_COUNT,
             checkedCmdlineRuleCount = CMDLINE_CHECKS.size,
             methods = methods,
+            identityReads = identityReads,
+        )
+    }
+
+    private fun collectIdentityReads(
+        nativeSnapshot: KernelCheckNativeSnapshot,
+        procVersion: String,
+    ): List<KernelIdentityRead> {
+        return identityConsistencyUtils.buildReads(
+            jvmOsVersion = System.getProperty("os.version").orEmpty(),
+            unameSyscallRelease = nativeSnapshot.utsRelease,
+            unameSyscallVersion = nativeSnapshot.utsVersion,
+            unameCommandRelease = executeCommand("uname", "-r"),
+            sysctlOsRelease = nativeSnapshot.sysctlOsRelease
+                .ifBlank { readFileText("/proc/sys/kernel/osrelease") },
+            sysctlVersion = nativeSnapshot.sysctlVersion
+                .ifBlank { readFileText("/proc/sys/kernel/version") },
+            procVersion = procVersion,
         )
     }
 
@@ -226,6 +257,7 @@ class KernelCheckRepository(
         infoFindings: List<KernelCheckFinding>,
         cveAssessment: CvePatchAssessment,
         nativeAvailable: Boolean,
+        comparedIdentityFields: List<Pair<KernelIdentityField, List<KernelIdentityRead>>>,
     ): List<KernelCheckMethodResult> {
         val dangerById = dangerFindings.associateBy { it.id }
         val infoById = infoFindings.associateBy { it.id }
@@ -238,6 +270,10 @@ class KernelCheckRepository(
             buildNamingMethod("mentionScan", dangerById["at_mention"]),
             buildNamingMethod("customKernel", dangerById["custom_kernel"]),
             buildNamingMethod("kernelVersionCheck", dangerById["non_release_kernel_version"]),
+            buildIdentityConsistencyMethod(
+                dangerById[KernelCheckReport.IDENTITY_MISMATCH_FINDING_ID],
+                comparedIdentityFields,
+            ),
             buildNativeMethod(
                 "cmdlineCheck",
                 dangerById["suspicious_cmdline"],
@@ -272,6 +308,36 @@ class KernelCheckRepository(
             },
             detail = finding?.detail,
         )
+    }
+
+    private fun buildIdentityConsistencyMethod(
+        finding: KernelCheckFinding?,
+        comparedFields: List<Pair<KernelIdentityField, List<KernelIdentityRead>>>,
+    ): KernelCheckMethodResult {
+        return when {
+            finding != null -> KernelCheckMethodResult(
+                label = "identityConsistency",
+                summary = finding.value,
+                outcome = KernelCheckMethodOutcome.DETECTED,
+                detail = finding.detail,
+            )
+
+            comparedFields.isNotEmpty() -> KernelCheckMethodResult(
+                label = "identityConsistency",
+                summary = "${comparedFields.sumOf { (_, reads) -> reads.size }} reads agree",
+                outcome = KernelCheckMethodOutcome.CLEAN,
+                detail = comparedFields.joinToString(separator = "\n") { (field, fieldReads) ->
+                    "${field.label}: ${fieldReads.joinToString { it.label }}"
+                },
+            )
+
+            else -> KernelCheckMethodResult(
+                label = "identityConsistency",
+                summary = "Unavailable",
+                outcome = KernelCheckMethodOutcome.SUPPORT,
+                detail = "No kernel identity field had two readable sources, so nothing could be cross-checked.",
+            )
+        }
     }
 
     private fun buildNativeMethod(
