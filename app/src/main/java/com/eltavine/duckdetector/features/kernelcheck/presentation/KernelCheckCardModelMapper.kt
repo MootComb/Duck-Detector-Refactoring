@@ -24,6 +24,7 @@ import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckMethodOu
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckMethodResult
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckReport
 import com.eltavine.duckdetector.features.kernelcheck.domain.KernelCheckStage
+import com.eltavine.duckdetector.features.kernelcheck.domain.KernelIdentityField
 import com.eltavine.duckdetector.features.kernelcheck.ui.model.KernelCheckCardModel
 import com.eltavine.duckdetector.features.kernelcheck.ui.model.KernelCheckDetailRowModel
 import com.eltavine.duckdetector.features.kernelcheck.ui.model.KernelCheckHeaderFactModel
@@ -86,6 +87,9 @@ class KernelCheckCardModelMapper {
                 report.errorMessage ?: "Kernel Check failed before evidence could be assembled."
 
             KernelCheckStage.READY -> when {
+                report.hasIdentityMismatch ->
+                    "The kernel identity read through uname disagrees with the identity exported through /proc or with the value captured when this app's runtime started, which points at active kernel version spoofing."
+
                 report.hasHardIndicators ->
                     "Kernel identity text or boot-time native checks surfaced markers commonly seen on modified or community-built kernels."
 
@@ -121,14 +125,14 @@ class KernelCheckCardModelMapper {
 
             KernelCheckStage.READY -> listOf(
                 KernelCheckHeaderFactModel(
-                    label = "Naming",
+                    label = "Identity",
                     value = when {
-                        report.namingFindingCount > 0 -> report.namingFindingCount.toString()
+                        report.identityFindingCount > 0 -> report.identityFindingCount.toString()
                         report.unameOutput.isBlank() && report.procVersion.isBlank() -> "N/A"
                         else -> "Clean"
                     },
                     status = when {
-                        report.namingFindingCount > 0 -> DetectorStatus.danger()
+                        report.identityFindingCount > 0 -> DetectorStatus.danger()
                         report.unameOutput.isBlank() && report.procVersion.isBlank() -> DetectorStatus.info(
                             InfoKind.SUPPORT
                         )
@@ -200,6 +204,36 @@ class KernelCheckCardModelMapper {
                 identityRow("uname -a", report.unameOutput),
                 identityRow("/proc/version", report.procVersion),
                 identityRow("/proc/cmdline", report.procCmdline),
+            ) + buildIdentitySourceRows(report)
+        }
+    }
+
+    private fun buildIdentitySourceRows(
+        report: KernelCheckReport,
+    ): List<KernelCheckDetailRowModel> {
+        return KernelIdentityField.entries.mapNotNull { field ->
+            val fieldReads = report.identityReads.filter { it.field == field }
+            if (fieldReads.isEmpty()) {
+                return@mapNotNull null
+            }
+
+            val distinctValues = fieldReads.map { it.value }.distinct()
+            KernelCheckDetailRowModel(
+                label = "${field.label} across sources",
+                value = when {
+                    distinctValues.size > 1 -> "Divergent"
+                    fieldReads.size > 1 -> "Consistent (${fieldReads.size})"
+                    else -> "Single source"
+                },
+                status = when {
+                    distinctValues.size > 1 -> DetectorStatus.danger()
+                    fieldReads.size > 1 -> DetectorStatus.allClear()
+                    else -> DetectorStatus.info(InfoKind.SUPPORT)
+                },
+                detail = fieldReads.joinToString(separator = "\n") { fieldRead ->
+                    "${fieldRead.label} = ${fieldRead.value}"
+                },
+                detailMonospace = true,
             )
         }
     }
@@ -279,7 +313,11 @@ class KernelCheckCardModelMapper {
             )
 
             KernelCheckStage.READY -> when {
-                report.hasHardIndicators -> listOf(
+                report.hasHardIndicators -> listOfNotNull(
+                    KernelCheckImpactItemModel(
+                        text = "The kernel identity differs between the sources that export it, so the version this device reports to apps is being rewritten rather than simply being unusual.",
+                        status = DetectorStatus.danger(),
+                    ).takeIf { report.hasIdentityMismatch },
                     KernelCheckImpactItemModel(
                         text = "Modified or community-built kernels can change trust posture, boot state, and device integrity behavior.",
                         status = DetectorStatus.danger(),
@@ -559,7 +597,7 @@ class KernelCheckCardModelMapper {
         status: DetectorStatus,
     ): List<KernelCheckHeaderFactModel> {
         return listOf(
-            KernelCheckHeaderFactModel("Naming", value, status),
+            KernelCheckHeaderFactModel("Identity", value, status),
             KernelCheckHeaderFactModel("Boot", value, status),
             KernelCheckHeaderFactModel("Behavior", value, status),
             KernelCheckHeaderFactModel("Native", value, status),
@@ -594,6 +632,7 @@ class KernelCheckCardModelMapper {
             "mentionScan",
             "customKernel",
             "kernelVersionCheck",
+            "identityConsistency",
             "cmdlineCheck",
             "cvePatchCheck",
             "kptrRestrict",

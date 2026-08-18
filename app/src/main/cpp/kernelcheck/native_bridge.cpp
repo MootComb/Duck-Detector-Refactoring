@@ -18,10 +18,12 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <fcntl.h>
 #include <sstream>
 #include <string>
 #include <sys/syscall.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <vector>
 
@@ -37,6 +39,10 @@ namespace {
         bool available = true;
         std::string proc_version;
         std::string proc_cmdline;
+        std::string uts_release;
+        std::string uts_version;
+        std::string sysctl_osrelease;
+        std::string sysctl_version;
         bool suspicious_cmdline = false;
         bool kptr_exposed = false;
         std::vector<std::string> findings;
@@ -134,6 +140,21 @@ namespace {
         }
     }
 
+    void read_uts_identity(KernelSnapshot &snapshot) {
+        struct utsname uts{};
+        // Raw syscall rather than the libc wrapper: a userspace hook on uname() would otherwise
+        // rewrite this read as well, and then it could no longer be compared against procfs.
+        if (syscall(__NR_uname, &uts) == 0) {
+            snapshot.uts_release.assign(uts.release, strnlen(uts.release, sizeof(uts.release)));
+            snapshot.uts_version.assign(uts.version, strnlen(uts.version, sizeof(uts.version)));
+        } else {
+            snapshot.findings.emplace_back("UTS|FAILED|uname syscall failed");
+        }
+
+        snapshot.sysctl_osrelease = read_file_via_syscall("/proc/sys/kernel/osrelease", 256);
+        snapshot.sysctl_version = read_file_via_syscall("/proc/sys/kernel/version", 256);
+    }
+
     void check_cmdline(KernelSnapshot &snapshot) {
         if (snapshot.proc_cmdline.empty()) {
             return;
@@ -206,6 +227,7 @@ namespace {
     KernelSnapshot collect_snapshot() {
         KernelSnapshot snapshot;
         read_proc_files(snapshot);
+        read_uts_identity(snapshot);
         check_cmdline(snapshot);
         check_kptr(snapshot);
         return snapshot;
@@ -228,6 +250,10 @@ Java_com_eltavine_duckdetector_features_kernelcheck_data_native_KernelCheckNativ
     output << "AVAILABLE=" << (snapshot.available ? "1" : "0") << "\n";
     output << "PROC_VERSION=" << escape_value(snapshot.proc_version) << "\n";
     output << "PROC_CMDLINE=" << escape_value(snapshot.proc_cmdline) << "\n";
+    output << "UTS_RELEASE=" << escape_value(snapshot.uts_release) << "\n";
+    output << "UTS_VERSION=" << escape_value(snapshot.uts_version) << "\n";
+    output << "SYSCTL_OSRELEASE=" << escape_value(snapshot.sysctl_osrelease) << "\n";
+    output << "SYSCTL_VERSION=" << escape_value(snapshot.sysctl_version) << "\n";
     output << "CMDLINE=" << (snapshot.suspicious_cmdline ? "1" : "0") << "\n";
     output << "KPTR=" << (snapshot.kptr_exposed ? "1" : "0") << "\n";
 
