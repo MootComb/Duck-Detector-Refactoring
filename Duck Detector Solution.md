@@ -17,6 +17,12 @@ Verified boot
 -通过resetprop弱隐藏
 -通过可信执行环境检测(tee)
 
+检测到Widevine L1凭据一致性异常
+-精确sentinel属性、明确支持HW_SECURE_ALL却返回较低最大会话级别，或Java/native属性不一致作为DRM一致性信号
+-Android允许不支持请求等级时选择下一较低等级，VirtualDevice也可调整最大等级；能力预检未确认HW_SECURE_ALL时不将较低会话判为异常
+-Provisioning、显式安全级别会话请求或本地key request失败仅表示检测不完整，不等于凭据无效
+-Widevine Warning/Danger会影响Bootloader Card的一致性assessment和严重度，但不改写权威BootloaderState；UI以问号标记该分离状态
+
 **TEE**
 可信执行环境检测与预期不符
 -使用Oh My Keymint模块或近期更新的keystone伪装模块
