@@ -7,7 +7,7 @@
       "asm",
       "kotlin"
     ],
-    "contributions": 74,
+    "contributions": 78,
     "name": "eltavine",
     "avatarAssetPath": "github_contributors/avatars/eltavine.jpg",
     "summaryKey": "author_summary_eltavine",
@@ -19,7 +19,7 @@
       "cpp",
       "kotlin"
     ],
-    "contributions": 34,
+    "contributions": 36,
     "name": "XiaoTong6666",
     "avatarAssetPath": "github_contributors/avatars/xiaotong6666.jpg",
     "summaryKey": "author_summary_xiaotong",
@@ -79,6 +79,15 @@
     "login": "Searchur"
   },
   {
+    "profileUrl": "https://github.com/wxxsfxyzm",
+    "contributionKeys": ["kotlin"],
+    "contributions": 3,
+    "name": "wxxsfxyzm",
+    "avatarAssetPath": "github_contributors/avatars/wxxsfxyzm.jpg",
+    "summaryKey": "author_summary_wxx",
+    "login": "wxxsfxyzm"
+  },
+  {
     "profileUrl": "https://github.com/NEURAX-FX",
     "contributionKeys": [],
     "contributions": 3,
@@ -121,15 +130,6 @@
     "login": "qwq233"
   },
   {
-    "profileUrl": "https://github.com/wxxsfxyzm",
-    "contributionKeys": ["kotlin"],
-    "contributions": 2,
-    "name": "wxxsfxyzm",
-    "avatarAssetPath": "github_contributors/avatars/wxxsfxyzm.jpg",
-    "summaryKey": "author_summary_wxx",
-    "login": "wxxsfxyzm"
-  },
-  {
     "profileUrl": "https://github.com/HSSkyBoy",
     "contributionKeys": ["cpp"],
     "contributions": 2,
@@ -145,6 +145,14 @@
     "name": "MhmRdd",
     "avatarAssetPath": "github_contributors/avatars/mhmrdd.jpg",
     "login": "MhmRdd"
+  },
+  {
+    "profileUrl": "https://github.com/Y-0x",
+    "contributionKeys": [],
+    "contributions": 1,
+    "name": "Y-0x",
+    "avatarAssetPath": "github_contributors/avatars/y-0x.jpg",
+    "login": "Y-0x"
   },
   {
     "profileUrl": "https://github.com/SQMY-dor",
@@ -209,6 +217,14 @@
     "name": "cursoragent",
     "avatarAssetPath": "github_contributors/avatars/cursoragent.jpg",
     "login": "cursoragent"
+  },
+  {
+    "profileUrl": "https://github.com/jiugjk",
+    "contributionKeys": [],
+    "contributions": 1,
+    "name": "jiugjk",
+    "avatarAssetPath": "github_contributors/avatars/jiugjk.jpg",
+    "login": "jiugjk"
   },
   {
     "profileUrl": "https://github.com/Xiaobocai08",
