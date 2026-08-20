@@ -27,6 +27,7 @@ import com.eltavine.duckdetector.features.bootloader.domain.BootloaderReport
 import com.eltavine.duckdetector.features.bootloader.domain.BootloaderStage
 import com.eltavine.duckdetector.features.bootloader.domain.BootloaderState
 import com.eltavine.duckdetector.features.bootloader.ui.model.BootloaderCardModel
+import com.eltavine.duckdetector.features.bootloader.ui.model.BootloaderCardAssessment
 import com.eltavine.duckdetector.features.bootloader.ui.model.BootloaderDetailRowModel
 import com.eltavine.duckdetector.features.bootloader.ui.model.BootloaderHeaderFactModel
 import com.eltavine.duckdetector.features.bootloader.ui.model.BootloaderImpactItemModel
@@ -42,6 +43,7 @@ class BootloaderCardModelMapper {
             title = "Bootloader",
             subtitle = buildSubtitle(report),
             status = report.toDetectorStatus(),
+            assessment = report.toCardAssessment(),
             verdict = buildVerdict(report),
             summary = buildSummary(report),
             headerFacts = buildHeaderFacts(report),
@@ -65,7 +67,7 @@ class BootloaderCardModelMapper {
 
     private fun buildSubtitle(report: BootloaderReport): String {
         return when (report.stage) {
-            BootloaderStage.LOADING -> "attestation + boot props + raw boot consistency"
+            BootloaderStage.LOADING -> "attestation + boot props + DRM consistency"
             BootloaderStage.FAILED -> "local bootloader scan failed"
             BootloaderStage.READY -> "${report.checkedPropertyCount} props · ${report.attestationChainLength} certs · ${report.consistencyFindingCount} cross-checks"
         }
@@ -76,8 +78,18 @@ class BootloaderCardModelMapper {
             BootloaderStage.LOADING -> "Scanning boot state and verified boot evidence"
             BootloaderStage.FAILED -> "Bootloader scan failed"
             BootloaderStage.READY -> when {
-                report.dangerFindings.isNotEmpty() -> "${report.dangerFindings.size} critical boot integrity signal(s)"
-                report.warningFindings.isNotEmpty() -> "${report.warningFindings.size} boot state signal(s) need review"
+                report.dangerFindings.isNotEmpty() -> if (report.dangerFindings.areWidevineOnly()) {
+                    "${report.dangerFindings.size} critical DRM consistency signal(s)"
+                } else {
+                    "${report.dangerFindings.size} critical boot integrity signal(s)"
+                }
+
+                report.warningFindings.isNotEmpty() -> if (report.warningFindings.areWidevineOnly()) {
+                    "${report.warningFindings.size} DRM consistency signal(s) need review"
+                } else {
+                    "${report.warningFindings.size} boot state signal(s) need review"
+                }
+
                 report.state == BootloaderState.VERIFIED && report.evidenceMode == BootloaderEvidenceMode.ATTESTATION ->
                     "Locked and attested verified"
 
@@ -92,17 +104,17 @@ class BootloaderCardModelMapper {
     private fun buildSummary(report: BootloaderReport): String {
         return when (report.stage) {
             BootloaderStage.LOADING ->
-                "Attestation RootOfTrust, certificate trust, boot properties, raw androidboot parameters, and source consistency checks are collecting local evidence."
+                "Attestation RootOfTrust, certificate trust, boot properties, raw androidboot parameters, and Widevine credential consistency checks are collecting local evidence."
 
             BootloaderStage.FAILED ->
                 report.errorMessage ?: "Bootloader scan failed before evidence could be assembled."
 
             BootloaderStage.READY -> when {
                 report.dangerFindings.isNotEmpty() ->
-                    "Unlocked state, attestation contradictions, broken certificate trust, or verified-boot failures indicate reduced boot-chain trust."
+                    "Unlocked state, attestation contradictions, broken certificate trust, verified-boot failures, or a corroborated Widevine DRM inconsistency indicate reduced device trust."
 
                 report.warningFindings.isNotEmpty() ->
-                    "The boot chain is not obviously broken, but the evidence still shows custom-root, software-only, or coherence signals worth reviewing."
+                    "The boot chain is not obviously broken, but custom-root, software-only, Widevine DRM, or cross-source coherence signals still need review."
 
                 report.evidenceMode == BootloaderEvidenceMode.PROPERTIES_ONLY ->
                     "Boot properties look conservative, but the result falls back to software-readable signals because attestation RootOfTrust was unavailable."
@@ -128,7 +140,7 @@ class BootloaderCardModelMapper {
                 BootloaderHeaderFactModel(
                     label = "State",
                     value = stateLabel(report.state),
-                    status = report.toDetectorStatus(),
+                    status = report.authoritativeStateStatus(),
                 ),
                 BootloaderHeaderFactModel(
                     label = "Proof",
@@ -294,7 +306,11 @@ class BootloaderCardModelMapper {
                     label = "Cross-checks",
                     value = report.consistencyFindingCount.toString(),
                     status = if (report.consistencyFindingCount > 0) {
-                        if (report.dangerFindings.any { it.group.name == "CONSISTENCY" }) DetectorStatus.danger() else DetectorStatus.warning()
+                        if (report.dangerFindings.any { it.group.name == "CONSISTENCY" }) {
+                            DetectorStatus.danger()
+                        } else {
+                            DetectorStatus.warning()
+                        }
                     } else {
                         DetectorStatus.allClear()
                     },
@@ -375,7 +391,9 @@ class BootloaderCardModelMapper {
     private fun consistencyPlaceholders(): List<String> = listOf(
         "Attested hash vs vbmeta digest",
         "Verified boot coherence",
-        "Property source mismatch"
+        "Property source mismatch",
+        "Widevine credential",
+        "Widevine Java/native parity",
     )
 
     private fun methodPlaceholders(): List<String> = listOf(
@@ -389,6 +407,7 @@ class BootloaderCardModelMapper {
         "Raw boot params",
         "Source consistency",
         "Cross-check rules",
+        "Widevine credential",
     )
 
     private fun scanPlaceholders(): List<String> = listOf(
@@ -401,6 +420,10 @@ class BootloaderCardModelMapper {
         "Attestation chain",
         "Hardware-backed",
     )
+
+    private fun List<BootloaderFinding>.areWidevineOnly(): Boolean {
+        return isNotEmpty() && all { finding -> finding.id.startsWith(WIDEVINE_FINDING_PREFIX) }
+    }
 
     private fun severityStatus(severity: BootloaderFindingSeverity): DetectorStatus {
         return when (severity) {
@@ -487,5 +510,38 @@ class BootloaderCardModelMapper {
                 else -> DetectorStatus.allClear()
             }
         }
+    }
+
+    private fun BootloaderReport.toCardAssessment(): BootloaderCardAssessment {
+        val widevineFindings = findings.filter { finding ->
+            finding.id.startsWith(WIDEVINE_FINDING_PREFIX)
+        }
+        return when {
+            widevineFindings.any { it.severity == BootloaderFindingSeverity.DANGER } ->
+                BootloaderCardAssessment.CONSISTENCY_CONFLICT
+
+            widevineFindings.any { it.severity == BootloaderFindingSeverity.WARNING } ->
+                BootloaderCardAssessment.CONSISTENCY_REVIEW
+
+            else -> BootloaderCardAssessment.AUTHORITATIVE
+        }
+    }
+
+    // Card severity may include Widevine; the State fact remains authoritative.
+    private fun BootloaderReport.authoritativeStateStatus(): DetectorStatus {
+        return when (state) {
+            BootloaderState.VERIFIED -> DetectorStatus.allClear()
+            BootloaderState.SELF_SIGNED,
+            BootloaderState.LOCKED_UNKNOWN -> DetectorStatus.warning()
+
+            BootloaderState.UNLOCKED,
+            BootloaderState.FAILED_VERIFICATION -> DetectorStatus.danger()
+
+            BootloaderState.UNKNOWN -> DetectorStatus.info(InfoKind.SUPPORT)
+        }
+    }
+
+    private companion object {
+        const val WIDEVINE_FINDING_PREFIX = "widevine_"
     }
 }
