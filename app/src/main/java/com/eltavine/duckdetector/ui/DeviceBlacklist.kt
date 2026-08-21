@@ -59,7 +59,7 @@ internal object DeviceBlacklist {
     ): DeviceBlacklistMatch? {
         val normalizedManufacturer = manufacturer.orEmpty().trim().lowercase()
         val normalizedBrand = brand.orEmpty().trim().lowercase()
-        val isHuawei = normalizedManufacturer == "huawei" || normalizedBrand == "huawei"
+        val isHuawei = false
         if (!isHuawei) {
             return null
         }
